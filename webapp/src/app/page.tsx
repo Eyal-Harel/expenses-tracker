@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "./login/actions";
@@ -18,6 +19,14 @@ export default async function Home() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
       <p className="text-muted-foreground">Signed in as {user.email}</p>
+      <div className="flex gap-2">
+        <Link href="/upload">
+          <Button>Import a month</Button>
+        </Link>
+        <Link href="/transactions">
+          <Button variant="outline">View transactions</Button>
+        </Link>
+      </div>
       <form action={signOut}>
         <Button variant="outline" type="submit">
           Sign out
