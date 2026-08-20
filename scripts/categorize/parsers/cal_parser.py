@@ -1,5 +1,6 @@
 import re
 
+from .. import fx_rates
 from ..categories import normalize_category
 from .common import Transaction, is_health_clinic, looks_like_date, normalize_date, parse_amount, read_logical_rows
 
@@ -17,7 +18,6 @@ PASSPORT_CARD_MARKER = "פספורטכארד"
 # amount itself rather than the inconsistent Hebrew header text.
 CHARGE_DATE_TITLE_RE = re.compile(r"לחיוב ב-(\d{1,2}/\d{1,2}/\d{4})")
 USD_MARKER = "$"
-USD_TO_ILS_RATE = 2.97  # approximate fixed rate, per user; not exact to the transaction day
 
 
 def find_charge_date(rows: list[list[str]]) -> str | None:
@@ -71,10 +71,10 @@ def parse(path: str) -> list[Transaction]:
         raw_amount = row[COL_CHARGE_AMOUNT]
         is_usd = USD_MARKER in raw_amount
         amount = parse_amount(raw_amount)
-        if is_usd:
-            amount *= USD_TO_ILS_RATE
-        txn_type = row[COL_TYPE].strip() if len(row) > COL_TYPE else ""
         normalized_date = normalize_date(date_field)
+        if is_usd:
+            amount *= fx_rates.get_rate(normalized_date, "USD")
+        txn_type = row[COL_TYPE].strip() if len(row) > COL_TYPE else ""
         row_charge_date = normalized_date if is_usd else charge_date
 
         transactions.append(

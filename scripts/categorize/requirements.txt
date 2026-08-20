@@ -1,6 +1,7 @@
 pandas
 openpyxl
 gspread
+requests
 google-auth
 google-genai
 python-dotenv

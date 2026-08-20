@@ -2,6 +2,8 @@
 
 Monthly script that turns Bank / Cal / Max exports into categorized rows in a Google Sheet, using a merchant→category rules table with an LLM fallback for anything new. See `docs/apple_pay_pipeline.md` for the separate, existing Apple Pay → Sheets pipeline (untouched by this).
 
+**Start with [`docs/runbook.md`](docs/runbook.md)** for the operational manual — how to recognize which export is which, the monthly workflow (including avoiding duplicate imports), how the categorization tiers actually decide things, and known gotchas. This file below is just setup + command reference.
+
 ## Setup
 
 ```
