@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { createClient } from "@/lib/supabase/server";
+import { ReviewQueue } from "./review-queue";
 
 export default async function TransactionsPage({
   searchParams,
@@ -18,10 +19,14 @@ export default async function TransactionsPage({
     redirect("/login");
   }
 
-  const { data: transactions, error } = await supabase
-    .from("transactions")
-    .select("*")
-    .order("date", { ascending: false });
+  const [{ data: transactions, error }, { data: categories }] = await Promise.all([
+    supabase.from("transactions").select("*").order("date", { ascending: false }),
+    supabase.from("categories").select("name, section"),
+  ]);
+
+  const needsReview = (transactions ?? [])
+    .filter((t) => t.needs_review)
+    .map((t) => ({ id: t.id, date: t.date, source: t.source, merchant: t.merchant, amount: Number(t.amount) }));
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-8">
@@ -36,6 +41,8 @@ export default async function TransactionsPage({
           <span className="text-sm underline">Import another month</span>
         </Link>
       </div>
+
+      <ReviewQueue items={needsReview} categories={categories ?? []} />
 
       {error && <p className="text-sm text-red-600">{error.message}</p>}
 
