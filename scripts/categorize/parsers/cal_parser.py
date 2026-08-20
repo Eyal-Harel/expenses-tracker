@@ -17,10 +17,32 @@ PASSPORT_CARD_MARKER = "פספורטכארד"
 # שוטף בחו"ל" vs "עסקאות שחויבו בדולר"), so detect via the $ sign on the
 # amount itself rather than the inconsistent Hebrew header text.
 CHARGE_DATE_TITLE_RE = re.compile(r"לחיוב ב-(\d{1,2}/\d{1,2}/\d{4})")
-USD_MARKER = "$"
+
+# Any of these symbols in the amount cell means "not ILS, needs conversion"
+# (see fx_rates.py). Only USD has actually shown up in real data so far —
+# EUR/GBP are here so a future export in either doesn't silently repeat the
+# exact bug we found and fixed for USD (amount stored as if it were ILS).
+FOREIGN_CURRENCY_MARKERS = {
+    "$": "USD",
+    "€": "EUR",
+    "£": "GBP",
+}
+
+
+def detect_foreign_currency(raw_amount: str) -> str | None:
+    """Returns the ISO code for the foreign currency this cell is
+    denominated in (e.g. "USD"), or None if it's a plain ILS amount."""
+    for symbol, code in FOREIGN_CURRENCY_MARKERS.items():
+        if symbol in raw_amount:
+            return code
+    return None
 
 
 def find_charge_date(rows: list[list[str]]) -> str | None:
+    """Scans every cell in the file for the title-line charge-date pattern
+    (see CHARGE_DATE_TITLE_RE above) and returns the first match, or None if
+    the file doesn't have one (e.g. the very first Cal export we ever got
+    didn't include this line at all)."""
     for row in rows:
         for cell in row:
             match = CHARGE_DATE_TITLE_RE.search(cell)
@@ -47,6 +69,9 @@ COL_CATEGORY = 7
 
 
 def tier0_category(merchant: str, txn_type: str) -> str | None:
+    """Hard-coded Cal rules: health clinics, Passport Card -> Travel, and the
+    standing-order-only Apple.com/Bill -> Subscriptions split. Returns None
+    (falls through to Tier 1 / Tier 2 in main.py) for everything else."""
     if is_health_clinic(merchant):
         return "Health"
     if PASSPORT_CARD_MARKER in merchant:
@@ -57,6 +82,11 @@ def tier0_category(merchant: str, txn_type: str) -> str | None:
 
 
 def parse(path: str) -> list[Transaction]:
+    """Reads a Cal export CSV end to end: every data row becomes a
+    Transaction, with the file-wide charge date applied (except foreign-
+    currency rows, which get their own transaction date and a live FX
+    conversion to ILS instead — see detect_foreign_currency above) and
+    Tier 0 categorization already applied where a rule matched."""
     rows = read_logical_rows(path)
     charge_date = find_charge_date(rows)
     transactions = []
@@ -69,13 +99,13 @@ def parse(path: str) -> list[Transaction]:
 
         merchant = row[COL_MERCHANT].strip()
         raw_amount = row[COL_CHARGE_AMOUNT]
-        is_usd = USD_MARKER in raw_amount
+        foreign_currency = detect_foreign_currency(raw_amount)
         amount = parse_amount(raw_amount)
         normalized_date = normalize_date(date_field)
-        if is_usd:
-            amount *= fx_rates.get_rate(normalized_date, "USD")
+        if foreign_currency:
+            amount *= fx_rates.get_rate(normalized_date, foreign_currency)
         txn_type = row[COL_TYPE].strip() if len(row) > COL_TYPE else ""
-        row_charge_date = normalized_date if is_usd else charge_date
+        row_charge_date = normalized_date if foreign_currency else charge_date
 
         transactions.append(
             Transaction(

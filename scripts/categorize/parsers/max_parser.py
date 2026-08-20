@@ -63,6 +63,9 @@ ABROAD_COL_CHARGE_DATE = 9
 
 
 def tier0_local_category(merchant: str, amount: float) -> str | None:
+    """Hard-coded Max-local rules: health clinics, and the amount-threshold
+    split for AM:PM/Super-Pharm branches. Returns None (falls through to
+    Tier 1 / Tier 1.5 / Tier 2 in main.py) for everything else."""
     if is_health_clinic(merchant):
         return "Health"
     if merchant in THRESHOLD_MERCHANTS:
@@ -86,6 +89,10 @@ def resolve_hint(merchant: str, max_own_category: str) -> str | None:
 
 
 def tier0_abroad_category(merchant: str) -> str:
+    """Every abroad-tab row gets a category unconditionally (unlike local,
+    there's no 'fall through to Tier 1' here): health clinics, the named
+    merchant overrides (AliExpress/Spotify/Netflix/Lime), or Travel by
+    default for everything else."""
     if is_health_clinic(merchant):
         return "Health"
     merchant_lower = merchant.lower()
@@ -96,6 +103,10 @@ def tier0_abroad_category(merchant: str) -> str:
 
 
 def parse_local(path: str) -> list[Transaction]:
+    """Reads a Max local-deals export CSV end to end: every data row becomes
+    a Transaction, carrying both Max's own charge date (per-row, but usually
+    the same single date for every row in the file) and its own category
+    hint, for Tier 1.5 to use later if Tier 0/1 don't resolve it."""
     rows = read_logical_rows(path)
     transactions = []
     for row in rows:
@@ -125,6 +136,10 @@ def parse_local(path: str) -> list[Transaction]:
 
 
 def parse_abroad(path: str) -> list[Transaction]:
+    """Reads a Max abroad-deals export CSV end to end: every data row becomes
+    a Transaction. Unlike local, each row here carries its own individual
+    charge date (foreign transactions settle on a rolling basis, not bundled
+    into one statement date) and is fully categorized by Tier 0 already."""
     rows = read_logical_rows(path)
     transactions = []
     for row in rows:

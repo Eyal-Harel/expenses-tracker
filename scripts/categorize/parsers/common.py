@@ -11,11 +11,16 @@ HEALTH_CLINIC_MARKERS = ("מרפאת", "מרפאה")
 
 
 def is_health_clinic(merchant: str) -> bool:
+    """True if the merchant name contains a clinic marker (see HEALTH_CLINIC_MARKERS above)."""
     return any(marker in merchant for marker in HEALTH_CLINIC_MARKERS)
 
 
 @dataclass
 class Transaction:
+    """The one common shape every source parser (bank/cal/max) produces,
+    regardless of how different each raw export's format is. Everything
+    downstream of parsing — categorization, writing to the sheet — only
+    ever deals with this shape, never the source-specific raw rows."""
     date: str  # normalized YYYY-MM-DD, deal/transaction date (when the purchase happened)
     source: str  # "Max" | "Cal" | "Bank"
     merchant: str  # merchant name, or description for Bank rows
@@ -28,6 +33,10 @@ class Transaction:
 
 
 def looks_like_date(value: str) -> bool:
+    """True if value matches a D/M/Y-style date (any of / or - as separator,
+    2 or 4 digit year). Used to tell real data rows apart from headers,
+    blank rows, and trailing notes in a raw export — those never have a
+    valid date in the date column, so this doubles as a row filter."""
     return bool(DATE_RE.match((value or "").strip()))
 
 
@@ -45,6 +54,10 @@ def normalize_date(value: str, day_first: bool = True) -> str:
 
 
 def parse_amount(raw: str) -> float:
+    """Turns a raw amount cell ("₪ 1,234.56", "-$45.00", "1234", ...) into a
+    float. Strips thousands separators and currency symbols, keeps the sign.
+    Does not do currency conversion — that's a separate step (see fx_rates.py)
+    for sources that can bill in a foreign currency."""
     if raw is None:
         return 0.0
     s = str(raw).strip()

@@ -37,6 +37,10 @@ HEADER_DEBIT = "חובה"
 
 
 def tier0_category(description: str) -> str | None:
+    """Checks the bank transaction description against the hard-coded
+    pattern rules above (Rent, Salary, Bank Fees, etc.) plus the shared
+    health-clinic check. Returns None if nothing matched, meaning this row
+    falls through to Tier 1 (rules table) / Tier 2 (LLM) in main.py."""
     if is_health_clinic(description):
         return "Health"
     for pattern, category in PATTERN_RULES:
@@ -46,6 +50,9 @@ def tier0_category(description: str) -> str | None:
 
 
 def is_ignored(description: str) -> bool:
+    """True if this is a card-company bill payment (e.g. 'מקס איט פיננסים') —
+    already itemized via the Max/Cal imports, so including it here too
+    would double-count the same spending."""
     return any(pattern in description for pattern in IGNORE_DESCRIPTIONS)
 
 
@@ -64,6 +71,10 @@ def find_columns(rows: list[list[str]]) -> tuple[int, dict[str, int]]:
 
 
 def parse(path: str) -> list[Transaction]:
+    """Reads a Bank export CSV end to end: finds the header row (wherever it
+    is, in whatever column order), skips card-bill-payment rows, and turns
+    every remaining data row into a Transaction with Tier 0 categorization
+    already applied where a pattern matched."""
     rows = read_logical_rows(path)
     header_row_index, cols = find_columns(rows)
     transactions = []
