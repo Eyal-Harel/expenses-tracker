@@ -82,13 +82,15 @@ def parse(path: str) -> list[Transaction]:
         debit = parse_amount(row[cols["debit"]])
         amount = credit if credit else -debit
 
+        normalized_date = normalize_date(date_field)
         transactions.append(
             Transaction(
-                date=normalize_date(date_field),
+                date=normalized_date,
                 source="Bank",
                 merchant=description,
                 amount=amount,
                 category=tier0_category(description),
+                charge_date=normalized_date,  # bank transaction date already is the posting/charge date
             )
         )
     return transactions

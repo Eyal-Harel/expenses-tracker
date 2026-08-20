@@ -3,7 +3,7 @@ import os
 from .parsers.common import Transaction
 from .rules_store import SheetsRulesStore
 
-TRANSACTIONS_HEADER = ["Date", "Source", "Merchant", "Amount", "Category", "Needs Review", "Done by"]
+TRANSACTIONS_HEADER = ["Date", "Source", "Merchant", "Amount", "Category", "Needs Review", "Done by", "Charge Date"]
 RULES_HEADER = ["Merchant", "Category"]
 
 TRANSACTIONS_TAB = "Transactions"
@@ -48,7 +48,7 @@ class TransactionsSheet:
 
     def append(self, transactions: list[Transaction]) -> None:
         rows = [
-            [t.date, t.source, t.merchant, t.amount, t.category, t.needs_review, t.done_by]
+            [t.date, t.source, t.merchant, t.amount, t.category, t.needs_review, t.done_by, t.charge_date]
             for t in transactions
         ]
         if rows:

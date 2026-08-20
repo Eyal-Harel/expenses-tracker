@@ -49,6 +49,7 @@ LOCAL_COL_DATE = 0
 LOCAL_COL_MERCHANT = 1
 LOCAL_COL_MAX_CATEGORY = 2
 LOCAL_COL_CHARGE_AMOUNT = 5
+LOCAL_COL_CHARGE_DATE = 9
 LOCAL_COL_CATEGORY = 10
 
 # Column layout confirmed from the real "... עסקאות חו_ל ומט_ח.csv" (abroad) export:
@@ -58,6 +59,7 @@ LOCAL_COL_CATEGORY = 10
 ABROAD_COL_DATE = 0
 ABROAD_COL_MERCHANT = 1
 ABROAD_COL_CHARGE_AMOUNT = 5
+ABROAD_COL_CHARGE_DATE = 9
 
 
 def tier0_local_category(merchant: str, amount: float) -> str | None:
@@ -106,6 +108,7 @@ def parse_local(path: str) -> list[Transaction]:
         merchant = row[LOCAL_COL_MERCHANT].strip()
         amount = parse_amount(row[LOCAL_COL_CHARGE_AMOUNT])
         max_own_category = row[LOCAL_COL_MAX_CATEGORY].strip() if len(row) > LOCAL_COL_MAX_CATEGORY else ""
+        charge_date_field = row[LOCAL_COL_CHARGE_DATE].strip() if len(row) > LOCAL_COL_CHARGE_DATE else ""
 
         transactions.append(
             Transaction(
@@ -115,6 +118,7 @@ def parse_local(path: str) -> list[Transaction]:
                 amount=amount,
                 category=tier0_local_category(merchant, amount),
                 hint=max_own_category,
+                charge_date=normalize_date(charge_date_field) if looks_like_date(charge_date_field) else None,
             )
         )
     return transactions
@@ -132,6 +136,7 @@ def parse_abroad(path: str) -> list[Transaction]:
 
         merchant = row[ABROAD_COL_MERCHANT].strip()
         amount = parse_amount(row[ABROAD_COL_CHARGE_AMOUNT])
+        charge_date_field = row[ABROAD_COL_CHARGE_DATE].strip() if len(row) > ABROAD_COL_CHARGE_DATE else ""
 
         transactions.append(
             Transaction(
@@ -140,6 +145,7 @@ def parse_abroad(path: str) -> list[Transaction]:
                 merchant=merchant,
                 amount=amount,
                 category=tier0_abroad_category(merchant),
+                charge_date=normalize_date(charge_date_field) if looks_like_date(charge_date_field) else None,
             )
         )
     return transactions

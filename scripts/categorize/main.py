@@ -61,9 +61,9 @@ def write_dry_run_csv(path: str, transactions: list[Transaction]) -> None:
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     with open(path, "w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["Date", "Source", "Merchant", "Amount", "Category", "Needs Review", "Done by"])
+        writer.writerow(["Date", "Source", "Merchant", "Amount", "Category", "Needs Review", "Done by", "Charge Date"])
         for t in transactions:
-            writer.writerow([t.date, t.source, t.merchant, t.amount, t.category, t.needs_review, t.done_by])
+            writer.writerow([t.date, t.source, t.merchant, t.amount, t.category, t.needs_review, t.done_by, t.charge_date])
 
 
 def main():

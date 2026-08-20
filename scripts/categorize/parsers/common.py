@@ -16,7 +16,7 @@ def is_health_clinic(merchant: str) -> bool:
 
 @dataclass
 class Transaction:
-    date: str  # normalized YYYY-MM-DD
+    date: str  # normalized YYYY-MM-DD, deal/transaction date (when the purchase happened)
     source: str  # "Max" | "Cal" | "Bank"
     merchant: str  # merchant name, or description for Bank rows
     amount: float
@@ -24,6 +24,7 @@ class Transaction:
     needs_review: bool = False
     done_by: str | None = None  # "Script" | "AI"
     hint: str | None = None  # source's own category label, e.g. Max's "קטגוריה" column; used by the pipeline, not written to the sheet
+    charge_date: str | None = None  # normalized YYYY-MM-DD, when the card bill actually hit the bank
 
 
 def looks_like_date(value: str) -> bool:
