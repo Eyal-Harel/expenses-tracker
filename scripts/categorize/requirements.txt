@@ -1,0 +1,6 @@
+pandas
+openpyxl
+gspread
+google-auth
+google-genai
+python-dotenv
