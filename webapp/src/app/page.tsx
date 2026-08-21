@@ -26,6 +26,9 @@ export default async function Home() {
         <Link href="/transactions">
           <Button variant="outline">View transactions</Button>
         </Link>
+        <Link href="/summary">
+          <Button variant="outline">Summary</Button>
+        </Link>
       </div>
       <form action={signOut}>
         <Button variant="outline" type="submit">
