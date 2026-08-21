@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import { redirect } from "next/navigation";
+import { Nav } from "@/components/nav";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CANONICAL_CATEGORIES } from "@/lib/categories";
 import { createClient } from "@/lib/supabase/server";
@@ -54,7 +55,10 @@ export default async function SummaryPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-8">
-      <h1 className="text-lg font-medium">Summary</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-medium">Summary</h1>
+        <Nav current="/summary" />
+      </div>
       {error && <p className="text-sm text-red-600">{error.message}</p>}
       {months.length === 0 ? (
         <p className="text-sm text-muted-foreground">No categorized transactions yet.</p>
