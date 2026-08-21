@@ -1,6 +1,25 @@
 import { normalizeCategory } from "../categories";
 import { isHealthClinic, looksLikeDate, newTransaction, normalizeDate, parseAmount, readLogicalRows, type Transaction } from "./common";
 
+// Max's real xlsx export names its two tabs "עסקאות במועד החיוב" (local) and
+// "עסקאות חו״ל ומט״ח" (abroad) — used to route each sheet of an uploaded
+// workbook to the right parser regardless of which of the two upload slots
+// it came through. Matched after stripping spaces/quote-like punctuation
+// (״ ' " ׳), since the exact geresh character isn't consistent between
+// exports.
+function normalizeSheetName(name: string): string {
+  return name.replace(/[\s"'׳״]/g, "");
+}
+
+export function isLocalMaxSheet(sheetName: string): boolean {
+  return normalizeSheetName(sheetName).includes("במועדהחיוב");
+}
+
+export function isAbroadMaxSheet(sheetName: string): boolean {
+  const normalized = normalizeSheetName(sheetName);
+  return normalized.includes("חול") || normalized.includes("מטח");
+}
+
 // Merchants whose category depends on the transaction amount, not just the
 // merchant name (confirmed against real data: both AM:PM branches follow the
 // threshold, not just Bograshov as first described).

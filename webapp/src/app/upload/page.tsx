@@ -19,26 +19,28 @@ export default async function UploadPage({
           <CardHeader>
             <CardTitle>Import a month</CardTitle>
             <CardDescription>
-              Any subset of the four files is fine — Bank, Cal, and Max&apos;s two tabs (local + abroad).
+              Any subset of the four files is fine — Bank, Cal, and Max&apos;s two tabs (local + abroad). Each field
+              accepts either a .csv or the original .xlsx export. If your Max workbook has both tabs in one file,
+              drop it into either Max field below — both tabs are detected and split automatically.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form action={uploadAndImport} className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="bank">Bank export</Label>
-                <input id="bank" name="bank" type="file" accept=".csv" className="text-sm" />
+                <input id="bank" name="bank" type="file" accept=".csv,.xlsx" className="text-sm" />
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="cal">Cal export</Label>
-                <input id="cal" name="cal" type="file" accept=".csv" className="text-sm" />
+                <input id="cal" name="cal" type="file" accept=".csv,.xlsx" className="text-sm" />
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="maxLocal">Max — local deals</Label>
-                <input id="maxLocal" name="maxLocal" type="file" accept=".csv" className="text-sm" />
+                <input id="maxLocal" name="maxLocal" type="file" accept=".csv,.xlsx" className="text-sm" />
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="maxAbroad">Max — abroad deals</Label>
-                <input id="maxAbroad" name="maxAbroad" type="file" accept=".csv" className="text-sm" />
+                <input id="maxAbroad" name="maxAbroad" type="file" accept=".csv,.xlsx" className="text-sm" />
               </div>
               {error && <p className="text-sm text-red-600">{decodeURIComponent(error)}</p>}
               <Button type="submit">Import</Button>
