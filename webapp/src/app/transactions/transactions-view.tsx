@@ -217,7 +217,7 @@ export function TransactionsView({
       <div className="overflow-x-auto rounded-md border">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="[&>th]:font-bold [&>th]:text-foreground">
               <TableHead>Date</TableHead>
               <TableHead>Source</TableHead>
               <TableHead>Merchant</TableHead>
@@ -229,8 +229,8 @@ export function TransactionsView({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((t) => (
-              <TableRow key={t.id}>
+            {rows.map((t, i) => (
+              <TableRow key={t.id} className={i % 2 === 1 ? "bg-muted/40" : ""}>
                 <TableCell>{t.date}</TableCell>
                 <TableCell>{t.source}</TableCell>
                 <TableCell className="max-w-xs truncate">{t.merchant}</TableCell>

@@ -34,23 +34,17 @@ export default async function TransactionsPage({
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-medium">Transactions</h1>
-          {imported && (
-            <p className="text-sm text-muted-foreground">Imported {imported} transaction(s).</p>
-          )}
-          {(category || month) && (
-            <p className="text-sm text-muted-foreground">
-              Filtered: {category ?? "All categories"} {month ?? ""}{" "}
-              <Link href="/transactions" className="underline">
-                Clear filter
-              </Link>
-            </p>
-          )}
-        </div>
-        <Nav current="/transactions" />
-      </div>
+      <Nav current="/transactions" title="Transactions">
+        {imported && <p className="text-sm text-muted-foreground">Imported {imported} transaction(s).</p>}
+        {(category || month) && (
+          <p className="text-sm text-muted-foreground">
+            Filtered: {category ?? "All categories"} {month ?? ""}{" "}
+            <Link href="/transactions" className="underline">
+              Clear filter
+            </Link>
+          </p>
+        )}
+      </Nav>
 
       {error && <p className="text-sm text-red-600">{error.message}</p>}
 

@@ -1,7 +1,16 @@
 import Link from "next/link";
+import { UploadIcon, ReceiptIcon, ChartColumnIcon, TagsIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Wordmark } from "@/components/logo";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "./login/actions";
+
+const TILES = [
+  { href: "/upload", label: "Import a month", description: "Upload Bank, Cal, and Max exports", Icon: UploadIcon },
+  { href: "/transactions", label: "Transactions", description: "Browse and review every transaction", Icon: ReceiptIcon },
+  { href: "/summary", label: "Summary", description: "Monthly totals by category", Icon: ChartColumnIcon },
+  { href: "/rules", label: "Category Rules", description: "Manage merchant → category mappings", Icon: TagsIcon },
+] as const;
 
 export default async function Home() {
   const supabase = await createClient();
@@ -17,18 +26,21 @@ export default async function Home() {
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
+    <div className="flex flex-1 flex-col items-center justify-center gap-10 p-8">
+      <Wordmark className="scale-125" />
       <p className="text-muted-foreground">Signed in as {user.email}</p>
-      <div className="flex gap-2">
-        <Link href="/upload">
-          <Button>Import a month</Button>
-        </Link>
-        <Link href="/transactions">
-          <Button variant="outline">View transactions</Button>
-        </Link>
-        <Link href="/summary">
-          <Button variant="outline">Summary</Button>
-        </Link>
+      <div className="grid w-full max-w-2xl grid-cols-1 gap-5 sm:grid-cols-2">
+        {TILES.map(({ href, label, description, Icon }) => (
+          <Link key={href} href={href}>
+            <div className="flex h-44 flex-col items-center justify-center gap-3 rounded-xl border bg-card p-6 text-center shadow-sm transition-all hover:border-primary hover:shadow-md">
+              <div className="flex size-14 items-center justify-center rounded-full bg-primary/10">
+                <Icon className="size-7 text-primary" />
+              </div>
+              <div className="text-lg font-semibold">{label}</div>
+              <p className="text-sm text-muted-foreground">{description}</p>
+            </div>
+          </Link>
+        ))}
       </div>
       <form action={signOut}>
         <Button variant="outline" type="submit">

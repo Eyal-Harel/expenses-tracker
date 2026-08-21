@@ -19,16 +19,12 @@ export default async function RulesPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-medium">Category Rules</h1>
-          <p className="text-sm text-muted-foreground">
-            {rules?.length ?? 0} merchant{(rules?.length ?? 0) === 1 ? "" : "s"} mapped. Every future import checks
-            this list before falling back to AI or manual review.
-          </p>
-        </div>
-        <Nav current="/rules" />
-      </div>
+      <Nav current="/rules" title="Category Rules">
+        <p className="text-sm text-muted-foreground">
+          {rules?.length ?? 0} merchant{(rules?.length ?? 0) === 1 ? "" : "s"} mapped. Every future import checks
+          this list before falling back to AI or manual review.
+        </p>
+      </Nav>
 
       {error && <p className="text-sm text-red-600">{error.message}</p>}
 
