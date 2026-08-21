@@ -4,9 +4,12 @@ import { isHealthClinic, looksLikeDate, newTransaction, normalizeDate, parseAmou
 
 const PASSPORT_CARD_MARKER = "פספורטכארד";
 
-// The file's title line states the charge date once for the whole file, e.g.
-// "עסקאות לחיוב ב-10/06/2026: 3,484.72 ₪". Applied to every ILS row in the
-// file. Foreign-currency rows (see FOREIGN_CURRENCY_MARKERS below) are
+// A title line states the charge date for every ILS row that follows it,
+// e.g. "עסקאות לחיוב ב-10/06/2026: 3,484.72 ₪" — normally once per file, but
+// a file can have more than one of these if several monthly exports were
+// concatenated before uploading, so each row is matched against the most
+// recent title line above it (see chargeDatesByRow), not just the file's
+// first one. Foreign-currency rows (see FOREIGN_CURRENCY_MARKERS below) are
 // excluded from that bundle — confirmed against real data: a "עסקאות שחויבו
 // בדולר" / "immediate charge" sub-section with no stated date, charged
 // separately from the main monthly cycle. For those, the transaction's own
@@ -36,18 +39,28 @@ export function detectForeignCurrency(rawAmount: string): string | null {
   return null;
 }
 
-/** Scans every cell in the file for the title-line charge-date pattern (see
- * CHARGE_DATE_TITLE_RE above) and returns the first match, or null if the
- * file doesn't have one (e.g. the very first Cal export we ever got didn't
- * include this line at all). */
-export function findChargeDate(rows: string[][]): string | null {
+/** Assigns each row the charge date from whichever title line most recently
+ * preceded it, top to bottom. A single-statement export has one title line,
+ * so every row gets the same date (the original behavior) — but a file
+ * where several monthly exports have been concatenated (e.g. manually
+ * combined before uploading) has one title line per section, and this
+ * makes sure a row only ever picks up its OWN section's date, not
+ * whichever title line happens to appear first in the file. Rows before
+ * any title line (or in a file with no title line at all) get null. */
+export function chargeDatesByRow(rows: string[][]): (string | null)[] {
+  const dates: (string | null)[] = [];
+  let current: string | null = null;
   for (const row of rows) {
     for (const cell of row) {
       const match = CHARGE_DATE_TITLE_RE.exec(cell);
-      if (match) return normalizeDate(match[1]);
+      if (match) {
+        current = normalizeDate(match[1]);
+        break;
+      }
     }
+    dates.push(current);
   }
-  return null;
+  return dates;
 }
 
 // APPLE.COM/BILL is not a single category: a standing order (הוראת קבע) is
@@ -78,16 +91,16 @@ export function tier0Category(merchant: string, txnType: string): string | null 
 }
 
 /** Reads a Cal export CSV end to end: every data row becomes a Transaction,
- * with the file-wide charge date applied (except foreign-currency rows,
+ * with its section's charge date applied (except foreign-currency rows,
  * which get their own transaction date and a live FX conversion to ILS
  * instead — see detectForeignCurrency above) and Tier 0 categorization
  * already applied where a rule matched. */
 export async function parse(content: string): Promise<Transaction[]> {
   const rows = readLogicalRows(content);
-  const chargeDate = findChargeDate(rows);
+  const chargeDates = chargeDatesByRow(rows);
   const transactions: Transaction[] = [];
 
-  for (const row of rows) {
+  for (const [i, row] of rows.entries()) {
     if (row.length <= COL_CHARGE_AMOUNT) continue;
     const dateField = (row[COL_DATE] ?? "").trim();
     if (!looksLikeDate(dateField)) continue; // header / blank / trailing rows
@@ -101,7 +114,7 @@ export async function parse(content: string): Promise<Transaction[]> {
       amount *= await getRate(normalizedDate, foreignCurrency);
     }
     const txnType = row.length > COL_TYPE ? (row[COL_TYPE] ?? "").trim() : "";
-    const rowChargeDate = foreignCurrency ? normalizedDate : chargeDate;
+    const rowChargeDate = foreignCurrency ? normalizedDate : chargeDates[i];
 
     transactions.push(
       newTransaction({
