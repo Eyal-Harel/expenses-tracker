@@ -62,6 +62,72 @@ export async function reviewTransactionsBulk(
   revalidatePath("/transactions");
 }
 
+/** Full manual edit of a transaction — date, charge date, source, merchant,
+ * amount, category — mirroring the direct-cell-editing behavior of the
+ * Google Sheet. A category change also promotes the merchant into
+ * category_rules, same as the review flow, so a manual correction here
+ * teaches future imports too. */
+export async function updateTransaction(input: {
+  id: string;
+  date: string;
+  chargeDate: string | null;
+  source: string;
+  merchant: string;
+  amount: number;
+  category: string;
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { error } = await supabase
+    .from("transactions")
+    .update({
+      date: input.date,
+      charge_date: input.chargeDate,
+      source: input.source,
+      merchant: input.merchant,
+      amount: input.amount,
+      category: input.category,
+      needs_review: false,
+      done_by: "Manual",
+    })
+    .eq("id", input.id)
+    .eq("user_id", user.id);
+  if (error) throw new Error(error.message);
+
+  const { error: ruleError } = await supabase
+    .from("category_rules")
+    .upsert({ user_id: user.id, merchant: input.merchant, category: input.category }, { onConflict: "user_id,merchant" });
+  if (ruleError) throw new Error(ruleError.message);
+
+  revalidatePath("/transactions");
+  revalidatePath("/summary");
+}
+
+/** Removes a transaction entirely — the other half of Sheet-like manual
+ * editing (fixing a bad row sometimes means deleting it, not just
+ * recategorizing it). */
+export async function deleteTransaction(id: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { error } = await supabase.from("transactions").delete().eq("id", id).eq("user_id", user.id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/transactions");
+  revalidatePath("/summary");
+}
+
 /** Inserts a brand-new per-user category on the spot (used from the
  * category picker's "Create a new category" option) — mainly for other
  * users whose real-world categories don't match this account's already-

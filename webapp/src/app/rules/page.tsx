@@ -1,0 +1,38 @@
+import { redirect } from "next/navigation";
+import { Nav } from "@/components/nav";
+import { createClient } from "@/lib/supabase/server";
+import { RulesView } from "./rules-view";
+
+export default async function RulesPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/login");
+  }
+
+  const [{ data: rules, error }, { data: categories }] = await Promise.all([
+    supabase.from("category_rules").select("id, merchant, category"),
+    supabase.from("categories").select("name, section"),
+  ]);
+
+  return (
+    <div className="flex flex-1 flex-col gap-4 p-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-medium">Category Rules</h1>
+          <p className="text-sm text-muted-foreground">
+            {rules?.length ?? 0} merchant{(rules?.length ?? 0) === 1 ? "" : "s"} mapped. Every future import checks
+            this list before falling back to AI or manual review.
+          </p>
+        </div>
+        <Nav current="/rules" />
+      </div>
+
+      {error && <p className="text-sm text-red-600">{error.message}</p>}
+
+      <RulesView rules={rules ?? []} categories={categories ?? []} />
+    </div>
+  );
+}

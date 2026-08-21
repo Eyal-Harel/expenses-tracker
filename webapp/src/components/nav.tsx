@@ -5,6 +5,7 @@ const LINKS = [
   { href: "/upload", label: "Import a month" },
   { href: "/transactions", label: "Transactions" },
   { href: "/summary", label: "Summary" },
+  { href: "/rules", label: "Category Rules" },
 ] as const;
 
 export function Nav({ current }: { current: string }) {

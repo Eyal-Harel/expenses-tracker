@@ -1,4 +1,5 @@
 import { Fragment } from "react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Nav } from "@/components/nav";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -88,11 +89,23 @@ export default async function SummaryPage() {
                     .map((c) => (
                       <TableRow key={c.name}>
                         <TableCell className="pl-6">{c.name}</TableCell>
-                        {months.map((m) => (
-                          <TableCell key={m} className="text-right">
-                            {fmt(cell(c.name, m))}
-                          </TableCell>
-                        ))}
+                        {months.map((m) => {
+                          const value = cell(c.name, m);
+                          return (
+                            <TableCell key={m} className="text-right">
+                              {value === 0 ? (
+                                "—"
+                              ) : (
+                                <Link
+                                  href={`/transactions?category=${encodeURIComponent(c.name)}&month=${m.slice(0, 7)}`}
+                                  className="hover:underline"
+                                >
+                                  {fmt(value)}
+                                </Link>
+                              )}
+                            </TableCell>
+                          );
+                        })}
                       </TableRow>
                     ))}
                   {section !== "Credits" && (

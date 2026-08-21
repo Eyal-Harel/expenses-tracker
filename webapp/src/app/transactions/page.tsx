@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Nav } from "@/components/nav";
 import { createClient } from "@/lib/supabase/server";
@@ -6,9 +7,9 @@ import { TransactionsView } from "./transactions-view";
 export default async function TransactionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ imported?: string }>;
+  searchParams: Promise<{ imported?: string; category?: string; month?: string }>;
 }) {
-  const { imported } = await searchParams;
+  const { imported, category, month } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -17,8 +18,17 @@ export default async function TransactionsPage({
     redirect("/login");
   }
 
+  let query = supabase.from("transactions").select("*").order("charge_date", { ascending: false });
+  if (category) query = query.eq("category", category);
+  if (month) {
+    const [y, m] = month.split("-").map(Number);
+    const start = `${month}-01`;
+    const next = new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 10);
+    query = query.gte("charge_date", start).lt("charge_date", next);
+  }
+
   const [{ data: transactions, error }, { data: categories }] = await Promise.all([
-    supabase.from("transactions").select("*").order("date", { ascending: false }),
+    query,
     supabase.from("categories").select("name, section"),
   ]);
 
@@ -30,6 +40,14 @@ export default async function TransactionsPage({
           {imported && (
             <p className="text-sm text-muted-foreground">Imported {imported} transaction(s).</p>
           )}
+          {(category || month) && (
+            <p className="text-sm text-muted-foreground">
+              Filtered: {category ?? "All categories"} {month ?? ""}{" "}
+              <Link href="/transactions" className="underline">
+                Clear filter
+              </Link>
+            </p>
+          )}
         </div>
         <Nav current="/transactions" />
       </div>
@@ -40,6 +58,7 @@ export default async function TransactionsPage({
         transactions={(transactions ?? []).map((t) => ({
           id: t.id,
           date: t.date,
+          charge_date: t.charge_date,
           source: t.source,
           merchant: t.merchant,
           amount: Number(t.amount),

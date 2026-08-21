@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { PencilIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,11 +15,13 @@ import {
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CategorySelect, type CategoryOption } from "./category-select";
+import { EditTransactionDialog, type EditableTx } from "./edit-transaction-dialog";
 import { reviewTransaction, reviewTransactionsBulk } from "./review-actions";
 
 interface TxRow {
   id: string;
   date: string;
+  charge_date: string | null;
   source: string;
   merchant: string;
   amount: number;
@@ -49,6 +52,10 @@ export function TransactionsView({
   const [pendingEdits, setPendingEdits] = useState<Map<string, string>>(new Map());
   const [savingAll, setSavingAll] = useState(false);
 
+  // Full manual edit (any field), mirroring direct-cell-editing in the Sheet.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const editingTx = rows.find((r) => r.id === editingId) ?? null;
+
   const needsReview = rows.filter((r) => r.needs_review);
   const current = needsReview[0];
   const matchingCurrentMerchant = current ? needsReview.filter((r) => r.merchant === current.merchant) : [];
@@ -67,6 +74,22 @@ export function TransactionsView({
 
   function handleCategoryCreated(cat: CategoryOption) {
     setCategoryOptions((prev) => [...prev, cat]);
+  }
+
+  function handleTxSaved(tx: EditableTx) {
+    setRows((prev) =>
+      prev.map((r) =>
+        r.id === tx.id
+          ? { ...r, ...tx, needs_review: false, done_by: "Manual" }
+          : r,
+      ),
+    );
+    router.refresh();
+  }
+
+  function handleTxDeleted(id: string) {
+    setRows((prev) => prev.filter((r) => r.id !== id));
+    router.refresh();
   }
 
   async function handleSaveNext() {
@@ -202,6 +225,7 @@ export function TransactionsView({
               <TableHead>Category</TableHead>
               <TableHead>Done by</TableHead>
               <TableHead>Review</TableHead>
+              <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -232,11 +256,28 @@ export function TransactionsView({
                 </TableCell>
                 <TableCell>{t.done_by}</TableCell>
                 <TableCell>{t.needs_review && <Badge variant="destructive">Review</Badge>}</TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="icon-sm" title="Edit" onClick={() => setEditingId(t.id)}>
+                    <PencilIcon />
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+
+      <EditTransactionDialog
+        transaction={editingTx}
+        open={editingId !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditingId(null);
+        }}
+        categories={categoryOptions}
+        onCategoryCreated={handleCategoryCreated}
+        onSaved={handleTxSaved}
+        onDeleted={handleTxDeleted}
+      />
     </>
   );
 }
