@@ -1,0 +1,28 @@
+name: Supabase keep-alive
+
+on:
+  schedule:
+    # Every 3 days — comfortably under Supabase's 7-day auto-pause window.
+    - cron: "0 6 */3 * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST endpoint
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${SUPABASE_URL}/rest/v1/" \
+            -H "apikey: ${SUPABASE_ANON_KEY}")
+          echo "Supabase REST endpoint responded with HTTP $status"
+          # Any response (including 401/404) means the project is awake and
+          # the request was registered as activity. Only a network-level
+          # failure (curl not even getting a status code) should fail the job.
+          if [ -z "$status" ]; then
+            echo "No response from Supabase — project may be unreachable."
+            exit 1
+          fi
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
