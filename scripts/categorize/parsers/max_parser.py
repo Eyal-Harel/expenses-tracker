@@ -1,5 +1,22 @@
+import re
+
 from ..categories import normalize_category
 from .common import Transaction, is_health_clinic, looks_like_date, normalize_date, parse_amount, read_logical_rows
+
+_SHEET_NAME_STRIP_RE = re.compile(r"[\s\"'׳״]")
+
+
+def normalize_sheet_name(name: str) -> str:
+    return _SHEET_NAME_STRIP_RE.sub("", name)
+
+
+def is_local_max_sheet(sheet_name: str) -> bool:
+    return "במועדהחיוב" in normalize_sheet_name(sheet_name)
+
+
+def is_abroad_max_sheet(sheet_name: str) -> bool:
+    normalized = normalize_sheet_name(sheet_name)
+    return "חול" in normalized or "מטח" in normalized
 
 # Merchants whose category depends on the transaction amount, not just the
 # merchant name (confirmed against real data: both AM:PM branches follow the
@@ -107,7 +124,7 @@ def parse_local(path: str) -> list[Transaction]:
     a Transaction, carrying both Max's own charge date (per-row, but usually
     the same single date for every row in the file) and its own category
     hint, for Tier 1.5 to use later if Tier 0/1 don't resolve it."""
-    rows = read_logical_rows(path)
+    rows = read_logical_rows(path, sheet_matcher=is_local_max_sheet)
     transactions = []
     for row in rows:
         if len(row) <= LOCAL_COL_CHARGE_AMOUNT:
@@ -140,7 +157,7 @@ def parse_abroad(path: str) -> list[Transaction]:
     a Transaction. Unlike local, each row here carries its own individual
     charge date (foreign transactions settle on a rolling basis, not bundled
     into one statement date) and is fully categorized by Tier 0 already."""
-    rows = read_logical_rows(path)
+    rows = read_logical_rows(path, sheet_matcher=is_abroad_max_sheet)
     transactions = []
     for row in rows:
         if len(row) <= ABROAD_COL_CHARGE_AMOUNT:
@@ -170,7 +187,7 @@ def iter_seed_pairs(path: str):
     """Yields (merchant, category) pairs from an already-categorized local-deals
     example export, for building the initial Category Rules seed. Skips
     threshold merchants since those must stay a hard-coded Tier 0 rule."""
-    rows = read_logical_rows(path)
+    rows = read_logical_rows(path, sheet_matcher=is_local_max_sheet)
     for row in rows:
         if len(row) <= LOCAL_COL_CATEGORY:
             continue

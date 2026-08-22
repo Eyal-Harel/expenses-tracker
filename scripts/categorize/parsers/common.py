@@ -1,5 +1,6 @@
 import csv
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 DATE_RE = re.compile(r"^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}$")
@@ -72,8 +73,41 @@ def parse_amount(raw: str) -> float:
     return -val if negative else val
 
 
-def read_logical_rows(path: str) -> list[list[str]]:
-    """Reads a CSV file into logical rows (csv.reader correctly merges
-    multi-line quoted cells, which Cal's export uses in its header)."""
+def _xlsx_cell_to_str(value: object) -> str:
+    """Converts one openpyxl cell value to the same style of string a raw CSV
+    export would contain. Dates are formatted D/M/Y (not ISO) because
+    looks_like_date()/normalize_date() above only recognize that day-first
+    style — a native Excel date cell formatted as ISO would silently fail
+    looks_like_date() and get dropped as if it were a header/blank row."""
+    import datetime
+
+    if value is None:
+        return ""
+    if isinstance(value, (datetime.datetime, datetime.date)):
+        return value.strftime("%d/%m/%Y")
+    return str(value)
+
+
+def _read_xlsx_rows(path: str, sheet_matcher: Callable[[str], bool] | None) -> list[list[str]]:
+    import openpyxl
+
+    workbook = openpyxl.load_workbook(path, data_only=True, read_only=True)
+    worksheet = workbook.active
+    if sheet_matcher is not None:
+        for ws in workbook.worksheets:
+            if sheet_matcher(ws.title):
+                worksheet = ws
+                break
+    return [[_xlsx_cell_to_str(cell) for cell in row] for row in worksheet.iter_rows(values_only=True)]
+
+
+def read_logical_rows(path: str, sheet_matcher: Callable[[str], bool] | None = None) -> list[list[str]]:
+    """Reads a CSV or .xlsx file into logical rows (csv.reader correctly
+    merges multi-line quoted cells, which Cal's export uses in its header).
+    For a multi-sheet .xlsx (e.g. Max's real workbook, local + abroad tabs in
+    one file), `sheet_matcher` picks which worksheet to read; without one, the
+    workbook's active/only sheet is used."""
+    if path.lower().endswith(".xlsx"):
+        return _read_xlsx_rows(path, sheet_matcher)
     with open(path, encoding="utf-8-sig", newline="") as f:
         return list(csv.reader(f))
