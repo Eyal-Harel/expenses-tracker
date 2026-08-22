@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { UploadIcon, ReceiptIcon, ChartColumnIcon, TagsIcon } from "lucide-react";
+import { UploadIcon, ReceiptIcon, ChartColumnIcon, TagsIcon, CircleHelpIcon, SettingsIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Wordmark } from "@/components/logo";
+import { FirstVisitWelcome } from "@/components/first-visit-welcome";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "./login/actions";
 
@@ -26,7 +27,21 @@ export default async function Home() {
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-10 p-8">
+    <div className="relative flex flex-1 flex-col items-center justify-center gap-10 p-8">
+      <FirstVisitWelcome />
+      <div className="absolute top-8 right-8 flex gap-2">
+        <Link href="/settings">
+          <Button variant="outline" size="icon-lg" title="Settings">
+            <SettingsIcon className="size-5" />
+          </Button>
+        </Link>
+        <Link href="/welcome">
+          <Button variant="outline" size="lg">
+            <CircleHelpIcon className="size-5" />
+            How it works
+          </Button>
+        </Link>
+      </div>
       <Wordmark className="scale-125" />
       <p className="text-muted-foreground">Signed in as {user.email}</p>
       <div className="grid w-full max-w-2xl grid-cols-1 gap-5 sm:grid-cols-2">

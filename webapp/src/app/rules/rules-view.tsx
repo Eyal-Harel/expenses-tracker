@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CategorySelect, type CategoryOption } from "@/app/transactions/category-select";
+import { CategoriesPanel } from "./categories-panel";
 import { createRule, deleteRule, updateRule } from "./actions";
 
 interface Rule {
@@ -35,8 +36,24 @@ export function RulesView({ rules, categories }: { rules: Rule[]; categories: Ca
 
   const sorted = [...filtered].sort((a, b) => a.merchant.localeCompare(b.merchant));
 
+  const rulesPerCategory = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of rows) m.set(r.category, (m.get(r.category) ?? 0) + 1);
+    return m;
+  }, [rows]);
+
   function handleCategoryCreated(cat: CategoryOption) {
     setCategoryOptions((prev) => [...prev, cat]);
+  }
+
+  function handleCategoryRenamed(oldName: string, newName: string) {
+    setCategoryOptions((prev) => prev.map((c) => (c.name === oldName ? { ...c, name: newName } : c)));
+    setRows((prev) => prev.map((r) => (r.category === oldName ? { ...r, category: newName } : r)));
+  }
+
+  function handleCategoryDeleted(name: string) {
+    setCategoryOptions((prev) => prev.filter((c) => c.name !== name));
+    setRows((prev) => prev.filter((r) => r.category !== name));
   }
 
   async function handleCategoryChange(id: string, category: string) {
@@ -80,6 +97,14 @@ export function RulesView({ rules, categories }: { rules: Rule[]; categories: Ca
 
   return (
     <div className="flex flex-col gap-4">
+      <CategoriesPanel
+        categories={categoryOptions}
+        rulesPerCategory={rulesPerCategory}
+        onCategoryCreated={handleCategoryCreated}
+        onCategoryRenamed={handleCategoryRenamed}
+        onCategoryDeleted={handleCategoryDeleted}
+      />
+
       <div className="flex flex-col gap-2 rounded-md border p-4">
         <p className="text-sm font-medium">Add a rule</p>
         <div className="flex flex-wrap items-end gap-2">

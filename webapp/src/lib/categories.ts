@@ -32,6 +32,12 @@ export const CANONICAL_CATEGORIES = [
 
 const LOOKUP = new Map(CANONICAL_CATEGORIES.map((c) => [c.toLowerCase(), c]));
 
+// Shared "this is a section label, not a data row" row style — used
+// anywhere a table groups rows by Credits/Fixed/Running/Irregular/Excluded
+// (Summary, Category Rules), so the two stay visually consistent.
+export const SECTION_HEADER_ROW_CLASS =
+  "bg-slate-800 text-slate-50 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-700";
+
 // Merchants where the name alone can never tell you what was actually bought
 // (e.g. a coupon/deal site — same merchant for a gym membership, a pizza
 // discount, show tickets...). Always left for manual categorization: no

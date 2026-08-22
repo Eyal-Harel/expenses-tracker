@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/summary", label: "Summary" },
   { href: "/rules", label: "Category Rules" },
   { href: "/settings", label: "Settings" },
+  { href: "/welcome", label: "How it works" },
 ] as const;
 
 /** Every authenticated page's header: logo + page title (with optional
