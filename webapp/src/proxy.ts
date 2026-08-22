@@ -31,7 +31,12 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isAuthRoute = request.nextUrl.pathname.startsWith("/login");
+  // /auth/callback must stay reachable while signed out — it's what
+  // establishes the session in the first place (Google OAuth lands here
+  // with a code to exchange), so gating it behind "already has a user"
+  // would strand it in a redirect loop before it ever runs.
+  const isAuthRoute =
+    request.nextUrl.pathname.startsWith("/login") || request.nextUrl.pathname.startsWith("/auth/callback");
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";

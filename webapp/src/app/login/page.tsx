@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/server";
-import { signIn, signUp } from "./actions";
+import { signIn, signInWithGoogle, signUp } from "./actions";
 
 export default async function LoginPage({
   searchParams,
@@ -54,6 +54,13 @@ export default async function LoginPage({
                 Create account
               </Button>
             </div>
+            <div className="relative py-2 text-center text-xs text-muted-foreground">
+              <span className="bg-card relative z-10 px-2">or</span>
+              <div className="absolute inset-x-0 top-1/2 border-t" />
+            </div>
+            <Button type="submit" formAction={signInWithGoogle} formNoValidate variant="outline">
+              Sign in with Google
+            </Button>
           </form>
         </CardContent>
       </Card>

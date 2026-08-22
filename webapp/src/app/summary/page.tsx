@@ -11,7 +11,7 @@ const SECTIONS = ["Credits", "Fixed Expenses", "Running Expenses", "Irregular Ex
 // Section headlines share one unified style — kept visually distinct from
 // the per-section highlight colors below so a "this is a section label"
 // row is never confused with a "this cell changed" signal.
-const SECTION_HEADER_CLASS = "bg-slate-800 text-slate-50 dark:bg-slate-700";
+const SECTION_HEADER_CLASS = "bg-slate-800 text-slate-50 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-700";
 
 // Per-section tint for the "this changed" cell highlight below — mirrors
 // the Google Sheet's actual conditional-formatting colors (pulled from the

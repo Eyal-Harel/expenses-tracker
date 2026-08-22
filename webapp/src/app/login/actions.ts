@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -29,6 +30,20 @@ export async function signUp(formData: FormData) {
   // Email confirmations are off for now (dev config — see supabase/config.toml),
   // so signUp already returns a live session; safe to send the user straight in.
   redirect("/");
+}
+
+export async function signInWithGoogle() {
+  const origin = (await headers()).get("origin");
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: `${origin}/auth/callback` },
+  });
+
+  if (error) {
+    redirect(`/login?error=${encodeURIComponent(error.message)}`);
+  }
+  redirect(data.url);
 }
 
 export async function signOut() {
