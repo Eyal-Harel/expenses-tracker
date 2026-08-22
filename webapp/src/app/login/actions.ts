@@ -7,9 +7,10 @@ import { createClient } from "@/lib/supabase/server";
 export async function signIn(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
+  const captchaToken = formData.get("h-captcha-response") as string;
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken } });
 
   if (error) {
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
@@ -20,9 +21,10 @@ export async function signIn(formData: FormData) {
 export async function signUp(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
+  const captchaToken = formData.get("h-captcha-response") as string;
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({ email, password });
+  const { error } = await supabase.auth.signUp({ email, password, options: { captchaToken } });
 
   if (error) {
     redirect(`/login?error=${encodeURIComponent(error.message)}`);

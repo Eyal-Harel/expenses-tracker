@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Script from "next/script";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,11 @@ export default async function LoginPage({
                 autoComplete="current-password"
               />
             </div>
+            {/* hCaptcha injects a hidden "h-captcha-response" field into this
+                form once solved; signIn/signUp read it straight off formData,
+                same as email/password — no client JS wiring needed here. */}
+            <div className="h-captcha" data-sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY} />
+            <Script src="https://js.hcaptcha.com/1/api.js" async defer />
             {error && <p className="text-sm text-red-600">{decodeURIComponent(error)}</p>}
             <div className="flex gap-2 pt-2">
               <Button type="submit" formAction={signIn} className="flex-1">
