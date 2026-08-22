@@ -72,10 +72,18 @@ export async function uploadAndImport(formData: FormData) {
   }
 
   const rules = await createRulesStore(supabase, user.id);
-  // Owner's key for now (BYO-key per user is a later stage) — no key means
-  // every unresolved row just gets flagged for manual review instead of
-  // guessed, same designed fallback as a user without their own key.
-  await categorize(transactions, rules, process.env.GEMINI_API_KEY ?? null);
+  // Prefer the user's own Gemini key (set on /settings) so their imports
+  // aren't bottlenecked by the shared owner key's free-tier daily quota;
+  // fall back to the owner's key for anyone who hasn't set one yet. No key
+  // at all means every unresolved row just gets flagged for manual review
+  // instead of guessed — same designed fallback either way.
+  const { data: settings } = await supabase
+    .from("user_settings")
+    .select("gemini_api_key")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const geminiApiKey = settings?.gemini_api_key ?? process.env.GEMINI_API_KEY ?? null;
+  await categorize(transactions, rules, geminiApiKey);
   await rules.save();
 
   const rows = transactions.map((t) => ({
