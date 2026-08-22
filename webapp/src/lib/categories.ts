@@ -40,8 +40,14 @@ const LOOKUP = new Map(CANONICAL_CATEGORIES.map((c) => [c.toLowerCase(), c]));
 export const ALWAYS_MANUAL_MERCHANTS = new Set(["בהצדעה"]);
 
 /** Maps a possibly-differently-cased category string to its canonical
- * spelling. Returns null if raw is empty or doesn't match any known category. */
-export function normalizeCategory(raw: string | null | undefined): string | null {
+ * spelling. Returns null if raw is empty or doesn't match any known category.
+ * Defaults to the static taxonomy, but callers validating against a specific
+ * user's own (possibly renamed/extended) categories should pass that list. */
+export function normalizeCategory(
+  raw: string | null | undefined,
+  validCategories: readonly string[] = CANONICAL_CATEGORIES,
+): string | null {
   if (!raw) return null;
-  return LOOKUP.get(raw.trim().toLowerCase()) ?? null;
+  const lookup = validCategories === CANONICAL_CATEGORIES ? LOOKUP : new Map(validCategories.map((c) => [c.toLowerCase(), c]));
+  return lookup.get(raw.trim().toLowerCase()) ?? null;
 }

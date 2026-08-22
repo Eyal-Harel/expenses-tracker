@@ -83,7 +83,9 @@ export async function uploadAndImport(formData: FormData) {
     .eq("user_id", user.id)
     .maybeSingle();
   const geminiApiKey = settings?.gemini_api_key ?? process.env.GEMINI_API_KEY ?? null;
-  await categorize(transactions, rules, geminiApiKey);
+  const { data: categoryRows } = await supabase.from("categories").select("name").eq("user_id", user.id);
+  const categories = (categoryRows ?? []).map((c) => c.name);
+  await categorize(transactions, rules, geminiApiKey, categories);
   await rules.save();
 
   const rows = transactions.map((t) => ({

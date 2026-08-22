@@ -14,6 +14,7 @@ export async function categorize(
   transactions: Transaction[],
   rules: RulesStore,
   geminiApiKey: string | null,
+  categories: readonly string[],
 ): Promise<void> {
   for (const t of transactions) {
     if (ALWAYS_MANUAL_MERCHANTS.has(t.merchant)) {
@@ -46,7 +47,7 @@ export async function categorize(
 
     if (geminiApiKey) {
       try {
-        t.category = await categorizeWithLlm(t.merchant, t.amount, t.source, geminiApiKey);
+        t.category = await categorizeWithLlm(t.merchant, t.amount, t.source, geminiApiKey, categories);
         rules.add(t.merchant, t.category);
       } catch (e) {
         console.warn(`LLM categorization failed for '${t.merchant}' (${e}); leaving uncategorized`);

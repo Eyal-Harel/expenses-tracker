@@ -1,7 +1,7 @@
 import { ApiError, GoogleGenAI } from "@google/genai";
-import { CANONICAL_CATEGORIES, normalizeCategory } from "./categories";
+import { normalizeCategory } from "./categories";
 
-const PROMPT_TEMPLATE = (source: string, merchant: string, amount: number) => `You are categorizing a single personal expense transaction for an Israeli household budget.
+const PROMPT_TEMPLATE = (source: string, merchant: string, amount: number, categories: readonly string[]) => `You are categorizing a single personal expense transaction for an Israeli household budget.
 
 Source: ${source}
 Merchant / description: ${merchant}
@@ -9,7 +9,7 @@ Amount: ${amount} ILS
 
 Pick exactly ONE category from this list that best fits. Respond with ONLY the category name, nothing else — no punctuation, no explanation.
 
-${CANONICAL_CATEGORIES.join("\n")}`;
+${categories.join("\n")}`;
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -23,16 +23,17 @@ export async function categorizeWithLlm(
   amount: number,
   source: string,
   apiKey: string,
+  categories: readonly string[],
   retries = 3,
 ): Promise<string> {
   const ai = new GoogleGenAI({ apiKey });
-  const prompt = PROMPT_TEMPLATE(source, merchant, amount);
+  const prompt = PROMPT_TEMPLATE(source, merchant, amount, categories);
 
   let lastError: unknown;
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
       const response = await ai.models.generateContent({ model: "gemini-3.6-flash", contents: prompt });
-      return normalizeCategory(response.text) ?? "Others";
+      return normalizeCategory(response.text, categories) ?? "Others";
     } catch (e) {
       const isServerError = e instanceof ApiError && e.status >= 500;
       if (!isServerError) throw e;
