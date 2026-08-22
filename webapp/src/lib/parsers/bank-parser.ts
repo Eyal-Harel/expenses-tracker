@@ -4,7 +4,10 @@ import { isHealthClinic, looksLikeDate, newTransaction, normalizeDate, parseAmou
 // reorders both columns AND the words within a description between exports
 // (e.g. "5237 - כרטיסי אשראי לי" vs "כרטיסי אשראי לי - 5237"), so match on
 // the stable core phrase rather than the exact string.
-const IGNORE_DESCRIPTIONS = ["מקס איט פיננסים", "כרטיסי אשראי לי"];
+// "העברה משורשרת" is the Cal card's own bill-payment line (confirmed: its
+// amount exactly matches Cal's own stated monthly charge total each month)
+// — without this, it double-counts alongside the itemized Cal import.
+const IGNORE_DESCRIPTIONS = ["מקס איט פיננסים", "כרטיסי אשראי לי", "העברה משורשרת"];
 
 // Tier 0: description -> fixed category. Checked as substring, in order;
 // first match wins.

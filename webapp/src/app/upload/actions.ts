@@ -92,7 +92,7 @@ export async function uploadAndImport(formData: FormData) {
 
   const { error } = await supabase
     .from("transactions")
-    .upsert(rows, { onConflict: "user_id,source,merchant,date,amount" });
+    .upsert(rows, { onConflict: "user_id,source,merchant,date,amount,charge_date" });
   if (error) {
     redirect("/upload?error=" + encodeURIComponent(error.message));
   }
