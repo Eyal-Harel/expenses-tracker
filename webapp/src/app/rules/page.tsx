@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { Nav } from "@/components/nav";
+import { friendlyDbError } from "@/lib/db-error";
 import { createClient } from "@/lib/supabase/server";
 import { RulesView } from "./rules-view";
 
@@ -26,7 +27,7 @@ export default async function RulesPage() {
         </p>
       </Nav>
 
-      {error && <p className="text-sm text-red-600">{error.message}</p>}
+      {error && <p className="text-sm text-red-600">{friendlyDbError(error, "RulesPage")}</p>}
 
       <RulesView rules={rules ?? []} categories={categories ?? []} />
     </div>

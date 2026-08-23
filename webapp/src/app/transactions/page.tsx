@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Nav } from "@/components/nav";
+import { friendlyDbError } from "@/lib/db-error";
 import { createClient } from "@/lib/supabase/server";
 import { TransactionsView } from "./transactions-view";
 
@@ -46,7 +47,7 @@ export default async function TransactionsPage({
         )}
       </Nav>
 
-      {error && <p className="text-sm text-red-600">{error.message}</p>}
+      {error && <p className="text-sm text-red-600">{friendlyDbError(error, "TransactionsPage")}</p>}
 
       <TransactionsView
         transactions={(transactions ?? []).map((t) => ({

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Nav } from "@/components/nav";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CANONICAL_CATEGORIES, SECTION_HEADER_ROW_CLASS } from "@/lib/categories";
+import { friendlyDbError } from "@/lib/db-error";
 import { createClient } from "@/lib/supabase/server";
 
 const SECTIONS = ["Credits", "Fixed Expenses", "Running Expenses", "Irregular Expenses"] as const;
@@ -112,7 +113,7 @@ export default async function SummaryPage() {
   return (
     <div className="flex flex-1 flex-col gap-4 p-8">
       <Nav current="/summary" title="Summary" />
-      {error && <p className="text-sm text-red-600">{error.message}</p>}
+      {error && <p className="text-sm text-red-600">{friendlyDbError(error, "SummaryPage")}</p>}
       {months.length === 0 ? (
         <p className="text-sm text-muted-foreground">No categorized transactions yet.</p>
       ) : (
