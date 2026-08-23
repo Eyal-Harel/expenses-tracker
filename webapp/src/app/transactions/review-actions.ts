@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { friendlyDbError } from "@/lib/db-error";
 import { createClient } from "@/lib/supabase/server";
+import { MAX_NAME_LENGTH } from "@/lib/validation";
 
 /** Applies a manual correction: sets the transaction's category and clears
  * needs_review, then promotes the merchant into category_rules (Tier 1) so
@@ -47,7 +49,7 @@ export async function reviewTransactionsBulk(
       .update({ category, needs_review: false, done_by: "Manual" })
       .in("id", ids)
       .eq("user_id", user.id);
-    if (error) throw new Error(error.message);
+    if (error) throw new Error(friendlyDbError(error, "reviewTransactionsBulk"));
   }
 
   const rulesByMerchant = new Map(items.map((i) => [i.merchant, i.category]));
@@ -57,7 +59,7 @@ export async function reviewTransactionsBulk(
       [...rulesByMerchant.entries()].map(([merchant, category]) => ({ user_id: user.id, merchant, category })),
       { onConflict: "user_id,merchant" },
     );
-  if (ruleError) throw new Error(ruleError.message);
+  if (ruleError) throw new Error(friendlyDbError(ruleError, "reviewTransactionsBulk (category_rules)"));
 
   revalidatePath("/transactions");
 }
@@ -76,6 +78,8 @@ export async function updateTransaction(input: {
   amount: number;
   category: string;
 }) {
+  if (input.merchant.trim().length > MAX_NAME_LENGTH) throw new Error("Merchant name is too long.");
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -98,12 +102,12 @@ export async function updateTransaction(input: {
     })
     .eq("id", input.id)
     .eq("user_id", user.id);
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(friendlyDbError(error, "updateTransaction"));
 
   const { error: ruleError } = await supabase
     .from("category_rules")
     .upsert({ user_id: user.id, merchant: input.merchant, category: input.category }, { onConflict: "user_id,merchant" });
-  if (ruleError) throw new Error(ruleError.message);
+  if (ruleError) throw new Error(friendlyDbError(ruleError, "updateTransaction (category_rules)"));
 
   revalidatePath("/transactions");
   revalidatePath("/summary");
@@ -122,7 +126,7 @@ export async function deleteTransaction(id: string) {
   }
 
   const { error } = await supabase.from("transactions").delete().eq("id", id).eq("user_id", user.id);
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(friendlyDbError(error, "deleteTransaction"));
 
   revalidatePath("/transactions");
   revalidatePath("/summary");
@@ -144,13 +148,20 @@ export async function createCategory(input: { name: string; section: string }) {
 
   const name = input.name.trim();
   if (!name) throw new Error("Category name can't be empty");
+  if (name.length > MAX_NAME_LENGTH) throw new Error("Category name is too long.");
 
   const { data, error } = await supabase
     .from("categories")
     .insert({ user_id: user.id, name, section: input.section })
     .select("name, section")
     .single();
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.message.includes("duplicate key")) {
+      console.error("[createCategory] duplicate key:", error.message);
+      throw new Error("You already have a category with that name.");
+    }
+    throw new Error(friendlyDbError(error, "createCategory"));
+  }
 
   revalidatePath("/transactions");
   return data as { name: string; section: string };

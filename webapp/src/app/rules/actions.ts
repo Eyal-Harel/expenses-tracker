@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { friendlyDbError } from "@/lib/db-error";
 import { createClient } from "@/lib/supabase/server";
+import { MAX_NAME_LENGTH } from "@/lib/validation";
 
 export async function updateRule(input: { id: string; category: string }) {
   const supabase = await createClient();
@@ -18,7 +20,7 @@ export async function updateRule(input: { id: string; category: string }) {
     .update({ category: input.category })
     .eq("id", input.id)
     .eq("user_id", user.id);
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(friendlyDbError(error, "updateRule"));
 
   revalidatePath("/rules");
 }
@@ -33,7 +35,7 @@ export async function deleteRule(id: string) {
   }
 
   const { error } = await supabase.from("category_rules").delete().eq("id", id).eq("user_id", user.id);
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(friendlyDbError(error, "deleteRule"));
 
   revalidatePath("/rules");
 }
@@ -52,13 +54,14 @@ export async function createRule(input: { merchant: string; category: string }) 
 
   const merchant = input.merchant.trim();
   if (!merchant) throw new Error("Merchant can't be empty");
+  if (merchant.length > MAX_NAME_LENGTH) throw new Error("Merchant name is too long.");
 
   const { data, error } = await supabase
     .from("category_rules")
     .upsert({ user_id: user.id, merchant, category: input.category }, { onConflict: "user_id,merchant" })
     .select("id, merchant, category")
     .single();
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(friendlyDbError(error, "createRule"));
 
   revalidatePath("/rules");
   return data as { id: string; merchant: string; category: string };
@@ -79,6 +82,7 @@ export async function renameCategory(input: { oldName: string; newName: string }
 
   const newName = input.newName.trim();
   if (!newName) throw new Error("Category name can't be empty");
+  if (newName.length > MAX_NAME_LENGTH) throw new Error("Category name is too long.");
   if (newName === input.oldName) return;
 
   const { error: catError } = await supabase
@@ -87,9 +91,11 @@ export async function renameCategory(input: { oldName: string; newName: string }
     .eq("user_id", user.id)
     .eq("name", input.oldName);
   if (catError) {
-    throw new Error(
-      catError.message.includes("duplicate key") ? "You already have a category with that name." : catError.message,
-    );
+    if (catError.message.includes("duplicate key")) {
+      console.error("[renameCategory] duplicate key:", catError.message);
+      throw new Error("You already have a category with that name.");
+    }
+    throw new Error(friendlyDbError(catError, "renameCategory"));
   }
 
   const { error: txError } = await supabase
@@ -97,14 +103,14 @@ export async function renameCategory(input: { oldName: string; newName: string }
     .update({ category: newName })
     .eq("user_id", user.id)
     .eq("category", input.oldName);
-  if (txError) throw new Error(txError.message);
+  if (txError) throw new Error(friendlyDbError(txError, "renameCategory (transactions)"));
 
   const { error: ruleError } = await supabase
     .from("category_rules")
     .update({ category: newName })
     .eq("user_id", user.id)
     .eq("category", input.oldName);
-  if (ruleError) throw new Error(ruleError.message);
+  if (ruleError) throw new Error(friendlyDbError(ruleError, "renameCategory (category_rules)"));
 
   revalidatePath("/rules");
   revalidatePath("/transactions");
@@ -131,7 +137,7 @@ export async function deleteCategory(name: string) {
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id)
     .eq("category", name);
-  if (countError) throw new Error(countError.message);
+  if (countError) throw new Error(friendlyDbError(countError, "deleteCategory (count)"));
   if ((count ?? 0) > 0) {
     throw new Error(
       `${count} transaction${count === 1 ? "" : "s"} still categorized as this — go to Transactions and reassign ` +
@@ -144,10 +150,10 @@ export async function deleteCategory(name: string) {
     .delete()
     .eq("user_id", user.id)
     .eq("category", name);
-  if (ruleError) throw new Error(ruleError.message);
+  if (ruleError) throw new Error(friendlyDbError(ruleError, "deleteCategory (category_rules)"));
 
   const { error } = await supabase.from("categories").delete().eq("user_id", user.id).eq("name", name);
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(friendlyDbError(error, "deleteCategory"));
 
   revalidatePath("/rules");
 }

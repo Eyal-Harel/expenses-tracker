@@ -13,6 +13,10 @@ export async function signIn(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken } });
 
   if (error) {
+    // Supabase's Auth errors (unlike raw Postgres errors) are already
+    // curated for end-user display — safe to show as-is; still logged for
+    // server-side visibility.
+    console.error("[signIn]", error.message);
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
   }
   redirect("/");
@@ -27,6 +31,7 @@ export async function signUp(formData: FormData) {
   const { error } = await supabase.auth.signUp({ email, password, options: { captchaToken } });
 
   if (error) {
+    console.error("[signUp]", error.message);
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
   }
   // Email confirmations are off for now (dev config — see supabase/config.toml),
@@ -43,6 +48,7 @@ export async function signInWithGoogle() {
   });
 
   if (error) {
+    console.error("[signInWithGoogle]", error.message);
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
   }
   redirect(data.url);

@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { categorize } from "@/lib/categorize";
+import { friendlyDbError } from "@/lib/db-error";
 import * as bankParser from "@/lib/parsers/bank-parser";
 import * as calParser from "@/lib/parsers/cal-parser";
 import * as maxParser from "@/lib/parsers/max-parser";
@@ -102,7 +103,7 @@ export async function uploadAndImport(formData: FormData) {
     .from("transactions")
     .upsert(rows, { onConflict: "user_id,source,merchant,date,amount,charge_date" });
   if (error) {
-    redirect("/upload?error=" + encodeURIComponent(error.message));
+    redirect("/upload?error=" + encodeURIComponent(friendlyDbError(error, "uploadAndImport")));
   }
 
   redirect(`/transactions?imported=${transactions.length}`);

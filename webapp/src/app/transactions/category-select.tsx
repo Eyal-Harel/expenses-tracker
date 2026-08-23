@@ -68,11 +68,7 @@ export function CategorySelect({
       setCreateOpen(false);
       setNewName("");
     } catch (e) {
-      setCreateError(
-        e instanceof Error && e.message.includes("duplicate key")
-          ? "You already have a category with that name."
-          : "Couldn't create that category. Try again.",
-      );
+      setCreateError(e instanceof Error ? e.message : "Couldn't create that category. Try again.");
     } finally {
       setCreating(false);
     }

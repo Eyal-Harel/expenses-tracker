@@ -59,11 +59,7 @@ export function CategoriesPanel({
       setAddSection(null);
       setAddName("");
     } catch (e) {
-      setAddError(
-        e instanceof Error && e.message.includes("duplicate key")
-          ? "You already have a category with that name."
-          : "Couldn't create that category.",
-      );
+      setAddError(e instanceof Error ? e.message : "Couldn't create that category.");
     } finally {
       setAdding(false);
     }

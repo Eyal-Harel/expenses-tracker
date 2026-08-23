@@ -211,10 +211,15 @@ token_verifications = 30
 web3 = 30
 
 # Configure one of the supported captcha providers: `hcaptcha`, `turnstile`.
-# [auth.captcha]
-# enabled = true
-# provider = "hcaptcha"
-# secret = ""
+# Mirrors what's actually enabled on the hosted project's dashboard (that
+# live config is separate from this file, which only governs local
+# `supabase start` — see the dashboard-vs-config.toml split noted elsewhere
+# in this project). Secret is read from the environment, never hardcoded
+# here since this file is committed to git.
+[auth.captcha]
+enabled = true
+provider = "hcaptcha"
+secret = "env(HCAPTCHA_SECRET_KEY)"
 
 [auth.email]
 # Allow/disallow new user signups via email to your project.
