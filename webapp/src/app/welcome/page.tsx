@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Nav } from "@/components/nav";
 import { createClient } from "@/lib/supabase/server";
+import { BankInfoForm } from "./bank-info-form";
+import { SampleSummaryPreview } from "./sample-summary-preview";
 
 export default async function WelcomePage() {
   const supabase = await createClient();
@@ -15,11 +17,10 @@ export default async function WelcomePage() {
     redirect("/login");
   }
 
-  const { data: categoryRows } = await supabase
-    .from("categories")
-    .select("name, section")
-    .eq("user_id", user.id)
-    .order("created_at");
+  const [{ data: categoryRows }, { data: settings }] = await Promise.all([
+    supabase.from("categories").select("name, section").eq("user_id", user.id).order("created_at"),
+    supabase.from("user_settings").select("bank_name, card_companies").eq("user_id", user.id).maybeSingle(),
+  ]);
 
   const categories = categoryRows ?? [];
 
@@ -35,6 +36,20 @@ export default async function WelcomePage() {
             from the nav bar above.
           </p>
         </div>
+
+        {/* Optional: bank/card declaration */}
+        <Card>
+          <CardHeader>
+            <CardTitle>What do you bank with?</CardTitle>
+            <CardDescription>
+              Only Bank Leumi, Cal, and Max are supported today, but more are planned as more people with different
+              providers start using this. Telling us now — entirely optional — helps prioritize what to build next.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BankInfoForm initialBankName={settings?.bank_name ?? ""} initialCardCompanies={settings?.card_companies ?? ""} />
+          </CardContent>
+        </Card>
 
         {/* Step 1: categories */}
         <Card>
@@ -71,6 +86,13 @@ export default async function WelcomePage() {
                 Go to Category Rules
               </Button>
             </Link>
+            <div className="mt-2 flex flex-col gap-2">
+              <p className="text-sm text-muted-foreground">
+                Here&apos;s roughly what the Summary page looks like once you&apos;ve imported a few months — made-up
+                numbers, just to show the shape of it:
+              </p>
+              <SampleSummaryPreview />
+            </div>
           </CardContent>
         </Card>
 

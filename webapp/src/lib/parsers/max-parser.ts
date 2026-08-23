@@ -5,10 +5,13 @@ import { isHealthClinic, looksLikeDate, newTransaction, normalizeDate, parseAmou
 // "עסקאות חו״ל ומט״ח" (abroad) — used to route each sheet of an uploaded
 // workbook to the right parser regardless of which of the two upload slots
 // it came through. Matched after stripping spaces/quote-like punctuation
-// (״ ' " ׳), since the exact geresh character isn't consistent between
-// exports.
+// (״ ' " ׳) and underscores, since the exact geresh character isn't
+// consistent between exports — confirmed against real downloaded CSV
+// filenames, where the geresh in "חו״ל"/"מט״ח" gets saved as "_" instead
+// (e.g. "עסקאות חו_ל ומט_ח.csv"), which would otherwise fail to match at
+// all.
 function normalizeSheetName(name: string): string {
-  return name.replace(/[\s"'׳״]/g, "");
+  return name.replace(/[\s"'׳״_]/g, "");
 }
 
 export function isLocalMaxSheet(sheetName: string): boolean {
