@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { friendlyDbError } from "@/lib/db-error";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { MAX_NAME_LENGTH } from "@/lib/validation";
 
@@ -64,4 +65,29 @@ export async function saveBankInfo(input: { bankName: string; cardCompanies: str
     updated_at: new Date().toISOString(),
   });
   if (error) throw new Error(friendlyDbError(error, "saveBankInfo"));
+}
+
+/** Permanently deletes the signed-in user's account and everything tied to
+ * it. Doesn't need to delete transactions/category_rules/categories/
+ * user_settings explicitly first — every one of those tables has
+ * `on delete cascade` on its user_id foreign key, so removing the
+ * auth.users row itself cascades through all of them atomically. Deleting
+ * an auth.users row requires the admin API (service_role key) — regular
+ * RLS-scoped clients can't do this even for their own account. No
+ * redirect here: called directly from a client component (not a form
+ * submission), so the caller navigates itself once this resolves. */
+export async function deleteAccount() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/login");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.deleteUser(user.id);
+  if (error) throw new Error(friendlyDbError(error, "deleteAccount"));
+
+  await supabase.auth.signOut();
 }

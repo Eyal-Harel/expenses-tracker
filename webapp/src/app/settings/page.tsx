@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Nav } from "@/components/nav";
 import { createClient } from "@/lib/supabase/server";
+import { DeleteAccountSection } from "./delete-account-section";
 import { SettingsForm } from "./settings-form";
 
 export default async function SettingsPage() {
@@ -34,6 +35,16 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent>
           <SettingsForm hasKey={!!settings?.gemini_api_key} />
+        </CardContent>
+      </Card>
+
+      <Card className="max-w-2xl">
+        <CardHeader>
+          <CardTitle>Delete account</CardTitle>
+          <CardDescription>Permanently delete your account and everything in it. This can&apos;t be undone.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DeleteAccountSection />
         </CardContent>
       </Card>
     </div>
