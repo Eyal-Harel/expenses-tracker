@@ -46,6 +46,10 @@ export default async function LoginPage({
                 autoComplete="current-password"
               />
             </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="inviteCode">Invite code (only needed to create an account)</Label>
+              <Input id="inviteCode" name="inviteCode" type="text" autoComplete="off" />
+            </div>
             {/* hCaptcha injects a hidden "h-captcha-response" field into this
                 form once solved; signIn/signUp read it straight off formData,
                 same as email/password — no client JS wiring needed here. */}
