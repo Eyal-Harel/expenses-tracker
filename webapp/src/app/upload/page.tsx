@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Nav } from "@/components/nav";
+import { SubmitButton } from "@/components/submit-button";
 import { createClient } from "@/lib/supabase/server";
 import { uploadAndImport } from "./actions";
 
@@ -63,7 +63,7 @@ export default async function UploadPage({
                 <Input id="max" name="max" type="file" accept=".csv,.xlsx" multiple className="h-auto py-1" />
               </div>
               {error && <p className="text-sm text-red-600">{decodeURIComponent(error)}</p>}
-              <Button type="submit">Import</Button>
+              <SubmitButton pendingText="Importing…">Import</SubmitButton>
             </form>
           </CardContent>
         </Card>

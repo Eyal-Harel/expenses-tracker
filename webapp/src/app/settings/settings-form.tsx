@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { LoaderCircleIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,7 +48,8 @@ export function SettingsForm({ hasKey }: { hasKey: boolean }) {
         <div className="flex items-center gap-2">
           <Input value="•••••••••••••••••••••••" disabled className="max-w-xs font-mono" />
           <Button type="button" variant="outline" onClick={handleClear} disabled={saving}>
-            Clear key
+            {saving && <LoaderCircleIcon className="animate-spin" />}
+            {saving ? "Clearing…" : "Clear key"}
           </Button>
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
@@ -108,7 +110,8 @@ export function SettingsForm({ hasKey }: { hasKey: boolean }) {
             autoComplete="off"
           />
           <Button type="button" onClick={handleSave} disabled={saving || !apiKey.trim()}>
-            Save
+            {saving && <LoaderCircleIcon className="animate-spin" />}
+            {saving ? "Saving…" : "Save"}
           </Button>
         </div>
       )}

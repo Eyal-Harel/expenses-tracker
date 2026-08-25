@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import Script from "next/script";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SubmitButton } from "@/components/submit-button";
 import { createClient } from "@/lib/supabase/server";
 import { signIn, signInWithGoogle, signUp } from "./actions";
 
@@ -57,20 +57,20 @@ export default async function LoginPage({
             <Script src="https://js.hcaptcha.com/1/api.js" async defer />
             {error && <p className="text-sm text-red-600">{decodeURIComponent(error)}</p>}
             <div className="flex gap-2 pt-2">
-              <Button type="submit" formAction={signIn} className="flex-1">
+              <SubmitButton formAction={signIn} pendingText="Signing in…" className="flex-1">
                 Sign in
-              </Button>
-              <Button type="submit" formAction={signUp} variant="outline" className="flex-1">
+              </SubmitButton>
+              <SubmitButton formAction={signUp} pendingText="Creating…" variant="outline" className="flex-1">
                 Create account
-              </Button>
+              </SubmitButton>
             </div>
             <div className="relative py-2 text-center text-xs text-muted-foreground">
               <span className="bg-card relative z-10 px-2">or</span>
               <div className="absolute inset-x-0 top-1/2 border-t" />
             </div>
-            <Button type="submit" formAction={signInWithGoogle} formNoValidate variant="outline">
+            <SubmitButton formAction={signInWithGoogle} formNoValidate variant="outline">
               Sign in with Google
-            </Button>
+            </SubmitButton>
           </form>
         </CardContent>
       </Card>
