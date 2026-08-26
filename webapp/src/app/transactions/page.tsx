@@ -47,7 +47,11 @@ export default async function TransactionsPage({
         )}
       </Nav>
 
-      {error && <p className="text-sm text-red-600">{friendlyDbError(error, "TransactionsPage")}</p>}
+      {error && (
+        <p className="text-sm text-red-600">
+          {friendlyDbError(error, "TransactionsPage", "Something went wrong loading this page. Please refresh.")}
+        </p>
+      )}
 
       <TransactionsView
         transactions={(transactions ?? []).map((t) => ({

@@ -146,8 +146,9 @@ export default async function WelcomePage() {
           <CardContent className="flex flex-col gap-3">
             <p className="text-sm">
               Totals are grouped into Credits, Fixed Expenses, Running Expenses, and Irregular Expenses, with a net
-              income line at the bottom. You can spot general trends at a glance from the cell colors — like a
-              category standing out from its usual month.
+              income line at the bottom. Some cells get highlighted to call out notable changes — tap the{" "}
+              <span className="font-medium">&quot;What do the colors mean?&quot;</span> link at the top of the
+              Summary page any time for the full explanation.
             </p>
             <Link href="/summary" className="self-start">
               <Button variant="outline" size="sm">

@@ -27,7 +27,11 @@ export default async function RulesPage() {
         </p>
       </Nav>
 
-      {error && <p className="text-sm text-red-600">{friendlyDbError(error, "RulesPage")}</p>}
+      {error && (
+        <p className="text-sm text-red-600">
+          {friendlyDbError(error, "RulesPage", "Something went wrong loading this page. Please refresh.")}
+        </p>
+      )}
 
       <RulesView rules={rules ?? []} categories={categories ?? []} />
     </div>

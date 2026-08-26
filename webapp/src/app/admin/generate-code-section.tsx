@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { CheckIcon, CopyIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generateInviteCode } from "./actions";
 
@@ -10,6 +11,14 @@ export function GenerateCodeSection() {
   const [generating, setGenerating] = useState(false);
   const [code, setCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    if (!code) return;
+    await navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   async function handleGenerate() {
     setGenerating(true);
@@ -32,8 +41,11 @@ export function GenerateCodeSection() {
         {generating ? "Generating…" : "Generate a new code"}
       </Button>
       {code && (
-        <p className="text-sm">
+        <p className="flex items-center gap-2 text-sm">
           New code: <span className="font-mono font-semibold">{code}</span>
+          <Button type="button" variant="ghost" size="icon-sm" title="Copy code" onClick={handleCopy}>
+            {copied ? <CheckIcon /> : <CopyIcon />}
+          </Button>
         </p>
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}

@@ -1,10 +1,19 @@
 import { Nav } from "@/components/nav";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireAdmin } from "@/lib/admin-check";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DeleteUserButton } from "./delete-user-button";
 import { GenerateCodeSection } from "./generate-code-section";
+
+// Owner's own external dashboards — not user-specific, just saves the
+// manual multi-click navigation to each one.
+const QUICK_LINKS = [
+  { label: "Google OAuth test users", href: "https://console.cloud.google.com/auth/audience?project=expenses-tracker-506009" },
+  { label: "Supabase dashboard", href: "https://supabase.com/dashboard/project/ddwrzjizytiwxxifbahx" },
+  { label: "Vercel dashboard", href: "https://vercel.com/eyal-harels-projects/expenses-tracker" },
+] as const;
 
 export default async function AdminPage() {
   const adminUser = await requireAdmin();
@@ -28,6 +37,21 @@ export default async function AdminPage() {
 
       {usersError && <p className="text-sm text-red-600">{usersError.message}</p>}
 
+      <Card className="max-w-2xl">
+        <CardHeader>
+          <CardTitle>Quick links</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          {QUICK_LINKS.map((link) => (
+            <a key={link.href} href={link.href} target="_blank" rel="noreferrer">
+              <Button type="button" variant="outline" size="sm">
+                {link.label}
+              </Button>
+            </a>
+          ))}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Users</CardTitle>
@@ -42,6 +66,7 @@ export default async function AdminPage() {
                 <TableRow>
                   <TableHead>Email</TableHead>
                   <TableHead>Signed up</TableHead>
+                  <TableHead>Last active</TableHead>
                   <TableHead className="text-right">Transactions</TableHead>
                   <TableHead />
                 </TableRow>
@@ -51,6 +76,7 @@ export default async function AdminPage() {
                   <TableRow key={u.id}>
                     <TableCell>{u.email}</TableCell>
                     <TableCell>{u.created_at ? new Date(u.created_at).toLocaleDateString() : "—"}</TableCell>
+                    <TableCell>{u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString() : "Never"}</TableCell>
                     <TableCell className="text-right">{countByUser.get(u.id) ?? 0}</TableCell>
                     <TableCell>
                       {u.id !== adminUser.id && <DeleteUserButton userId={u.id} email={u.email ?? "this account"} />}

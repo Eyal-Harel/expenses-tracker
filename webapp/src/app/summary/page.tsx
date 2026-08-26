@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { CANONICAL_CATEGORIES, SECTION_HEADER_ROW_CLASS } from "@/lib/categories";
 import { friendlyDbError } from "@/lib/db-error";
 import { createClient } from "@/lib/supabase/server";
+import { ColorLegend } from "./color-legend";
 
 const SECTIONS = ["Credits", "Fixed Expenses", "Running Expenses", "Irregular Expenses"] as const;
 
@@ -112,8 +113,16 @@ export default async function SummaryPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-8">
-      <Nav current="/summary" title="Summary" />
-      {error && <p className="text-sm text-red-600">{friendlyDbError(error, "SummaryPage")}</p>}
+      <Nav current="/summary" title="Summary">
+        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+          What do the colors mean? <ColorLegend />
+        </div>
+      </Nav>
+      {error && (
+        <p className="text-sm text-red-600">
+          {friendlyDbError(error, "SummaryPage", "Something went wrong loading this page. Please refresh.")}
+        </p>
+      )}
       {months.length === 0 ? (
         <p className="text-sm text-muted-foreground">No categorized transactions yet.</p>
       ) : (
