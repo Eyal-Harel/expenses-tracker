@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Nav } from "@/components/nav";
 import { SubmitButton } from "@/components/submit-button";
+import { TutorialBanner } from "@/components/tutorial-banner";
 import { createClient } from "@/lib/supabase/server";
 import { uploadAndImport } from "./actions";
 
@@ -18,9 +19,9 @@ function buildDescription(bankName: string | null, cardCompanies: string[]): str
 export default async function UploadPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; tutorial?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, tutorial } = await searchParams;
 
   const supabase = await createClient();
   const {
@@ -50,7 +51,9 @@ export default async function UploadPage({
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-8">
-      <Nav current="/upload" title="Import a month" />
+      <Nav current="/upload" title="Import a month">
+        <TutorialBanner show={tutorial === "1"} />
+      </Nav>
       <div className="flex flex-1 items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader>

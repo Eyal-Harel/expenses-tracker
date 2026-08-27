@@ -9,7 +9,13 @@ import type { RulesStore } from "./rules-store";
  * (rules table) -> Tier 1.5 (source-specific heuristics, e.g. Max's own
  * category hint) -> Tier 2 (LLM fallback, only if geminiApiKey is provided —
  * a user without their own key just gets everything flagged for manual
- * review instead, by design). */
+ * review instead, by design).
+ *
+ * .doneBy only ever names who actually resolved the category — "Manual" is
+ * set later, by the review UI, once a person really has picked one (see
+ * review-actions.ts). Nothing here sets it to "Manual" pre-emptively: a row
+ * nobody has resolved yet (no rule, no key, or a failed LLM call) is left
+ * with .doneBy === null, not a false claim that a human already did it. */
 export async function categorize(
   transactions: Transaction[],
   rules: RulesStore,
@@ -18,7 +24,6 @@ export async function categorize(
 ): Promise<void> {
   for (const t of transactions) {
     if (ALWAYS_MANUAL_MERCHANTS.has(t.merchant)) {
-      t.doneBy = "Manual";
       t.needsReview = true;
       continue; // never guessed, never memoized — name alone can't tell you what this was
     }
@@ -49,11 +54,11 @@ export async function categorize(
       try {
         t.category = await categorizeWithLlm(t.merchant, t.amount, t.source, geminiApiKey, categories);
         rules.add(t.merchant, t.category);
+        t.doneBy = "AI";
       } catch (e) {
         console.warn(`LLM categorization failed for '${t.merchant}' (${e}); leaving uncategorized`);
       }
     }
-    t.doneBy = "AI";
     t.needsReview = true;
   }
 }

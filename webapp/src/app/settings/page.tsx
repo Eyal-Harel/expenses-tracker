@@ -2,12 +2,18 @@ import { redirect } from "next/navigation";
 import { BankInfoForm } from "@/components/bank-info-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Nav } from "@/components/nav";
+import { TutorialBanner } from "@/components/tutorial-banner";
 import { createClient } from "@/lib/supabase/server";
 import { DeleteAccountSection } from "./delete-account-section";
 import { GeminiKeyHelp } from "./gemini-key-help";
 import { SettingsForm } from "./settings-form";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tutorial?: string }>;
+}) {
+  const { tutorial } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -24,7 +30,9 @@ export default async function SettingsPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-8">
-      <Nav current="/settings" title="Settings" />
+      <Nav current="/settings" title="Settings">
+        <TutorialBanner show={tutorial === "1"} />
+      </Nav>
 
       <Card className="max-w-2xl">
         <CardHeader>

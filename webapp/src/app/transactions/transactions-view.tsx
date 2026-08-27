@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { PencilIcon } from "lucide-react";
+import { PencilIcon, TrashIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +16,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CategorySelect, type CategoryOption } from "./category-select";
 import { EditTransactionDialog, type EditableTx } from "./edit-transaction-dialog";
-import { reviewTransaction, reviewTransactionsBulk } from "./review-actions";
+import { deleteTransactionsBulk, reviewTransaction, reviewTransactionsBulk } from "./review-actions";
 
 interface TxRow {
   id: string;
@@ -56,6 +56,12 @@ export function TransactionsView({
   const [editingId, setEditingId] = useState<string | null>(null);
   const editingTx = rows.find((r) => r.id === editingId) ?? null;
 
+  // Bulk delete: checkbox-select rows, confirm once, delete in one call.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const allSelected = rows.length > 0 && selectedIds.size === rows.length;
+
   const needsReview = rows.filter((r) => r.needs_review);
   const current = needsReview[0];
   const matchingCurrentMerchant = current ? needsReview.filter((r) => r.merchant === current.merchant) : [];
@@ -89,7 +95,40 @@ export function TransactionsView({
 
   function handleTxDeleted(id: string) {
     setRows((prev) => prev.filter((r) => r.id !== id));
+    setSelectedIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
     router.refresh();
+  }
+
+  function toggleRowSelected(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    setSelectedIds(allSelected ? new Set() : new Set(rows.map((r) => r.id)));
+  }
+
+  async function handleDeleteSelected() {
+    setDeleting(true);
+    try {
+      const ids = [...selectedIds];
+      await deleteTransactionsBulk(ids);
+      setRows((prev) => prev.filter((r) => !selectedIds.has(r.id)));
+      setSelectedIds(new Set());
+      setConfirmingDelete(false);
+      router.refresh();
+    } finally {
+      setDeleting(false);
+    }
   }
 
   async function handleSaveNext() {
@@ -166,6 +205,34 @@ export function TransactionsView({
         </div>
       )}
 
+      {selectedIds.size > 0 && (
+        <div className="flex items-center justify-between rounded-md border bg-muted/50 px-4 py-3 text-sm">
+          <span>
+            {selectedIds.size} transaction{selectedIds.size === 1 ? "" : "s"} selected.
+          </span>
+          <Button size="sm" variant="destructive" onClick={() => setConfirmingDelete(true)}>
+            <TrashIcon /> Delete selected
+          </Button>
+        </div>
+      )}
+
+      <Dialog open={confirmingDelete} onOpenChange={setConfirmingDelete}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete {selectedIds.size} transaction{selectedIds.size === 1 ? "" : "s"}?</DialogTitle>
+            <DialogDescription>This can&apos;t be undone.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setConfirmingDelete(false)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button type="button" variant="destructive" onClick={handleDeleteSelected} disabled={deleting}>
+              {deleting ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent>
           <DialogHeader>
@@ -218,6 +285,15 @@ export function TransactionsView({
         <Table>
           <TableHeader>
             <TableRow className="[&>th]:font-bold [&>th]:text-foreground">
+              <TableHead className="w-8">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-foreground"
+                  checked={allSelected}
+                  onChange={toggleSelectAll}
+                  aria-label="Select all"
+                />
+              </TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Source</TableHead>
               <TableHead>Merchant</TableHead>
@@ -231,6 +307,15 @@ export function TransactionsView({
           <TableBody>
             {rows.map((t, i) => (
               <TableRow key={t.id} className={i % 2 === 1 ? "bg-muted/40" : ""}>
+                <TableCell>
+                  <input
+                    type="checkbox"
+                    className="size-4 accent-foreground"
+                    checked={selectedIds.has(t.id)}
+                    onChange={() => toggleRowSelected(t.id)}
+                    aria-label={`Select ${t.merchant}`}
+                  />
+                </TableCell>
                 <TableCell>{t.date}</TableCell>
                 <TableCell>{t.source}</TableCell>
                 <TableCell className="max-w-xs truncate">{t.merchant}</TableCell>
@@ -254,7 +339,7 @@ export function TransactionsView({
                     (t.category ?? <span className="text-muted-foreground">—</span>)
                   )}
                 </TableCell>
-                <TableCell>{t.done_by}</TableCell>
+                <TableCell>{t.done_by ?? <span className="text-muted-foreground">Pending</span>}</TableCell>
                 <TableCell>{t.needs_review && <Badge variant="destructive">Review</Badge>}</TableCell>
                 <TableCell>
                   <Button variant="ghost" size="icon-sm" title="Edit" onClick={() => setEditingId(t.id)}>

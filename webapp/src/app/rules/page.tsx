@@ -1,10 +1,16 @@
 import { redirect } from "next/navigation";
 import { Nav } from "@/components/nav";
+import { TutorialBanner } from "@/components/tutorial-banner";
 import { friendlyDbError } from "@/lib/db-error";
 import { createClient } from "@/lib/supabase/server";
 import { RulesView } from "./rules-view";
 
-export default async function RulesPage() {
+export default async function RulesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tutorial?: string }>;
+}) {
+  const { tutorial } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -25,6 +31,7 @@ export default async function RulesPage() {
           {rules?.length ?? 0} merchant{(rules?.length ?? 0) === 1 ? "" : "s"} mapped. Every future import checks
           this list before falling back to AI or manual review.
         </p>
+        <TutorialBanner show={tutorial === "1"} />
       </Nav>
 
       {error && (

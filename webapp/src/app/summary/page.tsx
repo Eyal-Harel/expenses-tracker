@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Nav } from "@/components/nav";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TutorialBanner } from "@/components/tutorial-banner";
 import { CANONICAL_CATEGORIES, SECTION_HEADER_ROW_CLASS } from "@/lib/categories";
 import { friendlyDbError } from "@/lib/db-error";
 import { createClient } from "@/lib/supabase/server";
@@ -73,7 +74,12 @@ function monthLabel(monthDate: string): string {
   return d.toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 }
 
-export default async function SummaryPage() {
+export default async function SummaryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tutorial?: string }>;
+}) {
+  const { tutorial } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -117,6 +123,7 @@ export default async function SummaryPage() {
         <div className="flex items-center gap-1 text-sm text-muted-foreground">
           What do the colors mean? <ColorLegend />
         </div>
+        <TutorialBanner show={tutorial === "1"} />
       </Nav>
       {error && (
         <p className="text-sm text-red-600">

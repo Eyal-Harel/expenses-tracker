@@ -82,7 +82,7 @@ export default async function WelcomePage() {
                 );
               })}
             </div>
-            <Link href="/rules" className="self-start">
+            <Link href="/rules?tutorial=1" className="self-start">
               <Button variant="outline" size="sm">
                 Go to Category Rules
               </Button>
@@ -110,7 +110,7 @@ export default async function WelcomePage() {
               don&apos;t need all three every month; upload whichever ones you actually have for that period. Each
               file can be either <code>.csv</code> or <code>.xlsx</code>.
             </p>
-            <Link href="/upload" className="self-start">
+            <Link href="/upload?tutorial=1" className="self-start">
               <Button variant="outline" size="sm">
                 Go to Import a month
               </Button>
@@ -130,7 +130,7 @@ export default async function WelcomePage() {
               instead of guessed. Pick a category for it once, and you can apply that same choice to every other
               transaction from the same merchant in one click — the app remembers it for next time too.
             </p>
-            <Link href="/transactions" className="self-start">
+            <Link href="/transactions?tutorial=1" className="self-start">
               <Button variant="outline" size="sm">
                 Go to Transactions
               </Button>
@@ -151,7 +151,7 @@ export default async function WelcomePage() {
               <span className="font-medium">&quot;What do the colors mean?&quot;</span> link at the top of the
               Summary page any time for the full explanation.
             </p>
-            <Link href="/summary" className="self-start">
+            <Link href="/summary?tutorial=1" className="self-start">
               <Button variant="outline" size="sm">
                 Go to Summary
               </Button>
@@ -171,7 +171,7 @@ export default async function WelcomePage() {
               categorize manually — nothing breaks. With your own free Gemini key, those get auto-categorized
               instead. It&apos;s your own key and your own quota, never shared with other users.
             </p>
-            <Link href="/settings" className="self-start">
+            <Link href="/settings?tutorial=1" className="self-start">
               <Button variant="outline" size="sm">
                 Go to Settings
               </Button>

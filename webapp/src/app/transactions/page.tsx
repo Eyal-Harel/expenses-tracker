@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Nav } from "@/components/nav";
+import { TutorialBanner } from "@/components/tutorial-banner";
 import { friendlyDbError } from "@/lib/db-error";
 import { createClient } from "@/lib/supabase/server";
 import { TransactionsView } from "./transactions-view";
@@ -8,9 +9,9 @@ import { TransactionsView } from "./transactions-view";
 export default async function TransactionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ imported?: string; category?: string; month?: string }>;
+  searchParams: Promise<{ imported?: string; category?: string; month?: string; tutorial?: string }>;
 }) {
-  const { imported, category, month } = await searchParams;
+  const { imported, category, month, tutorial } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -45,6 +46,7 @@ export default async function TransactionsPage({
             </Link>
           </p>
         )}
+        <TutorialBanner show={tutorial === "1"} />
       </Nav>
 
       {error && (

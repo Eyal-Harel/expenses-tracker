@@ -117,6 +117,14 @@ export async function updateTransaction(input: {
  * editing (fixing a bad row sometimes means deleting it, not just
  * recategorizing it). */
 export async function deleteTransaction(id: string) {
+  return deleteTransactionsBulk([id]);
+}
+
+/** Same as deleteTransaction, but for many rows in one round trip — used by
+ * the "Delete selected" bulk action in the transactions table. */
+export async function deleteTransactionsBulk(ids: string[]) {
+  if (ids.length === 0) return;
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -125,8 +133,8 @@ export async function deleteTransaction(id: string) {
     redirect("/login");
   }
 
-  const { error } = await supabase.from("transactions").delete().eq("id", id).eq("user_id", user.id);
-  if (error) throw new Error(friendlyDbError(error, "deleteTransaction"));
+  const { error } = await supabase.from("transactions").delete().in("id", ids).eq("user_id", user.id);
+  if (error) throw new Error(friendlyDbError(error, "deleteTransactionsBulk"));
 
   revalidatePath("/transactions");
   revalidatePath("/summary");
