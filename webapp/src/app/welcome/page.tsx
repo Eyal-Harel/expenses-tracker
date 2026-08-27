@@ -4,8 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Nav } from "@/components/nav";
+import { BankInfoForm } from "@/components/bank-info-form";
 import { createClient } from "@/lib/supabase/server";
-import { BankInfoForm } from "./bank-info-form";
 import { SampleSummaryPreview } from "./sample-summary-preview";
 
 export default async function WelcomePage() {
@@ -42,12 +42,13 @@ export default async function WelcomePage() {
           <CardHeader>
             <CardTitle>What do you bank with?</CardTitle>
             <CardDescription>
-              Only Bank Leumi, Cal, and Max are supported today, but more are planned as more people with different
-              providers start using this. Telling us now — entirely optional — helps prioritize what to build next.
+              Only Bank Leumi, Cal, IsraCard, and Max are supported today, but more are planned as more people with
+              different providers start using this. Telling us now — entirely optional — helps prioritize what to
+              build next.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <BankInfoForm initialBankName={settings?.bank_name ?? ""} initialCardCompanies={settings?.card_companies ?? ""} />
+            <BankInfoForm initialBankName={settings?.bank_name ?? null} initialCardCompanies={settings?.card_companies ?? []} />
           </CardContent>
         </Card>
 
@@ -187,7 +188,7 @@ export default async function WelcomePage() {
             <dl className="flex flex-col gap-3 text-sm">
               <div className="flex gap-3">
                 <dt className="w-36 shrink-0 font-medium">Import a month</dt>
-                <dd className="text-muted-foreground">Upload Bank, Cal, and Max exports for a given month.</dd>
+                <dd className="text-muted-foreground">Upload Bank, Cal, IsraCard, and Max exports for a given month.</dd>
               </div>
               <div className="flex gap-3">
                 <dt className="w-36 shrink-0 font-medium">Transactions</dt>
@@ -207,7 +208,9 @@ export default async function WelcomePage() {
               </div>
               <div className="flex gap-3">
                 <dt className="w-36 shrink-0 font-medium">Settings</dt>
-                <dd className="text-muted-foreground">Add or remove your own Gemini API key.</dd>
+                <dd className="text-muted-foreground">
+                  Your Gemini API key, and which bank/card providers you use (drives which upload slots show up).
+                </dd>
               </div>
             </dl>
           </CardContent>

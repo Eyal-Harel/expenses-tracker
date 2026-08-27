@@ -1,6 +1,8 @@
 import { parse as parseCsv } from "csv-parse/sync";
 
-const DATE_RE = /^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}$/;
+// "." is IsraCard's own separator (e.g. "30.06.26") — added alongside the
+// "/"/"-" already used by Bank/Cal/Max, none of which ever use a dot.
+const DATE_RE = /^\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}$/;
 
 // Shared across sources: a merchant name containing one of these is a medical
 // clinic, regardless of which specific clinic — catches new ones on first
@@ -17,7 +19,7 @@ export function isHealthClinic(merchant: string): boolean {
 // ever deals with this shape, never the source-specific raw rows.
 export interface Transaction {
   date: string; // normalized YYYY-MM-DD, deal/transaction date (when the purchase happened)
-  source: "Max" | "Cal" | "Bank";
+  source: "Max" | "Cal" | "Bank" | "IsraCard";
   merchant: string; // merchant name, or description for Bank rows
   amount: number;
   category: string | null;
@@ -49,7 +51,7 @@ export function looksLikeDate(value: string | undefined): boolean {
 /** Accepts D/M/YY, DD/MM/YYYY, DD-MM-YYYY etc. and returns YYYY-MM-DD. */
 export function normalizeDate(value: string): string {
   value = value.trim();
-  const sep = value.includes("/") ? "/" : "-";
+  const sep = value.includes("/") ? "/" : value.includes(".") ? "." : "-";
   const parts = value.split(sep);
   if (parts.length !== 3) return value;
   const [day, month] = parts;

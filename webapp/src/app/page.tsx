@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { signOut } from "./login/actions";
 
 const TILES = [
-  { href: "/upload", label: "Import a month", description: "Upload Bank, Cal, and Max exports", Icon: UploadIcon },
+  { href: "/upload", label: "Import a month", description: "Upload Bank, Cal, IsraCard, and Max exports", Icon: UploadIcon },
   { href: "/transactions", label: "Transactions", description: "Browse and review every transaction", Icon: ReceiptIcon },
   { href: "/summary", label: "Summary", description: "Monthly totals by category", Icon: ChartColumnIcon },
   { href: "/rules", label: "Category Rules", description: "Manage merchant → category mappings", Icon: TagsIcon },

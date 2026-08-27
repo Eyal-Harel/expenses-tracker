@@ -5,6 +5,7 @@ import { categorize } from "@/lib/categorize";
 import { friendlyDbError } from "@/lib/db-error";
 import * as bankParser from "@/lib/parsers/bank-parser";
 import * as calParser from "@/lib/parsers/cal-parser";
+import * as isracardParser from "@/lib/parsers/isracard-parser";
 import * as maxParser from "@/lib/parsers/max-parser";
 import type { Transaction } from "@/lib/parsers/common";
 import { createRulesStore } from "@/lib/rules-store";
@@ -58,18 +59,20 @@ export async function uploadAndImport(formData: FormData) {
 
   const transactions: Transaction[] = [];
   try {
-    const [bankSheets, calSheets, maxSheets] = await Promise.all([
+    const [bankSheets, calSheets, isracardSheets, maxSheets] = await Promise.all([
       readFileSheets(formData, "bank"),
       readFileSheets(formData, "cal"),
+      readFileSheets(formData, "isracard"),
       readAllFileSheets(formData, "max"),
     ]);
 
-    if (!bankSheets && !calSheets && maxSheets.length === 0) {
+    if (!bankSheets && !calSheets && !isracardSheets && maxSheets.length === 0) {
       throw new Error("Choose at least one file");
     }
 
     if (bankSheets) transactions.push(...bankParser.parse(bankSheets[0].csv));
     if (calSheets) transactions.push(...(await calParser.parse(calSheets[0].csv)));
+    if (isracardSheets) transactions.push(...isracardParser.parse(isracardSheets[0].csv));
 
     // Max's real xlsx export has both tabs in one workbook — classify each
     // sheet by name so a single combined file correctly splits into both,

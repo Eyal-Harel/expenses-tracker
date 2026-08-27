@@ -2,9 +2,9 @@
 
 import { redirect } from "next/navigation";
 import { friendlyDbError } from "@/lib/db-error";
+import { isSupportedBank, isSupportedCardCompany } from "@/lib/providers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { MAX_NAME_LENGTH } from "@/lib/validation";
 
 export async function saveGeminiKey(apiKey: string) {
   const supabase = await createClient();
@@ -40,11 +40,12 @@ export async function clearGeminiKey() {
   if (error) throw new Error(friendlyDbError(error, "clearGeminiKey"));
 }
 
-/** Captures which bank/card providers the user actually uses — foreshadows
- * a future where more parsers exist and this could drive which upload
- * slots show up, but for now it's purely stored, not acted on. Optional:
- * an empty value clears the field instead of erroring. */
-export async function saveBankInfo(input: { bankName: string; cardCompanies: string }) {
+/** Captures which bank/card providers the user actually uses. Drives which
+ * upload slots show up on /upload (see upload/page.tsx) — anything not in
+ * SUPPORTED_BANKS/SUPPORTED_CARD_COMPANIES is silently dropped rather than
+ * erroring, since the picker only ever offers those values in the first
+ * place. */
+export async function saveBankInfo(input: { bankName: string | null; cardCompanies: string[] }) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -53,15 +54,13 @@ export async function saveBankInfo(input: { bankName: string; cardCompanies: str
     redirect("/login");
   }
 
-  const bankName = input.bankName.trim();
-  const cardCompanies = input.cardCompanies.trim();
-  if (bankName.length > MAX_NAME_LENGTH) throw new Error("That bank name is too long.");
-  if (cardCompanies.length > MAX_NAME_LENGTH) throw new Error("That's too long.");
+  const bankName = input.bankName && isSupportedBank(input.bankName) ? input.bankName : null;
+  const cardCompanies = input.cardCompanies.filter(isSupportedCardCompany);
 
   const { error } = await supabase.from("user_settings").upsert({
     user_id: user.id,
-    bank_name: bankName || null,
-    card_companies: cardCompanies || null,
+    bank_name: bankName,
+    card_companies: cardCompanies.length ? cardCompanies : null,
     updated_at: new Date().toISOString(),
   });
   if (error) throw new Error(friendlyDbError(error, "saveBankInfo"));
