@@ -12,10 +12,13 @@ jobs:
     steps:
       - name: Ping Supabase REST endpoint
         run: |
-          status=$(curl -s -o /dev/null -w "%{http_code}" \
+          response=$(curl -s -w "\n%{http_code}" \
             "${SUPABASE_URL}/rest/v1/" \
             -H "apikey: ${SUPABASE_ANON_KEY}")
+          status=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
           echo "Supabase REST endpoint responded with HTTP $status"
+          echo "Response body: $body"
           # Any response (including 401/404) means the project is awake and
           # the request was registered as activity. Only a network-level
           # failure (curl not even getting a status code) should fail the job.
