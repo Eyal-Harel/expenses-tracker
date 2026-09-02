@@ -12,13 +12,19 @@ jobs:
     steps:
       - name: Ping Supabase REST endpoint
         run: |
-          response=$(curl -s -w "\n%{http_code}" \
-            "${SUPABASE_URL}/rest/v1/" \
-            -H "apikey: ${SUPABASE_ANON_KEY}")
-          status=$(echo "$response" | tail -n1)
-          body=$(echo "$response" | sed '$d')
+          status=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${SUPABASE_URL}/rest/v1/categories?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}")
           echo "Supabase REST endpoint responded with HTTP $status"
-          echo "Response body: $body"
+          # A real table query (rather than the bare /rest/v1/ root, which
+          # requires the service_role key) reaches Postgres and registers as
+          # activity. Any DB-level response (200, or 401/403 from RLS) means
+          # the project is awake; only a network-level failure should fail.
+          if [ -z "$status" ]; then
+            echo "No response from Supabase — project may be unreachable."
+            exit 1
+          fi
           # Any response (including 401/404) means the project is awake and
           # the request was registered as activity. Only a network-level
           # failure (curl not even getting a status code) should fail the job.
