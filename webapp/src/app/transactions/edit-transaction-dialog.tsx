@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CategorySelect, type CategoryOption } from "./category-select";
 import { deleteTransaction, updateTransaction } from "./review-actions";
 
-const SOURCES = ["Bank", "Cal", "Max", "IsraCard"] as const;
+export const SOURCES = ["Bank", "Cal", "Max", "IsraCard"] as const;
 
 export interface EditableTx {
   id: string;

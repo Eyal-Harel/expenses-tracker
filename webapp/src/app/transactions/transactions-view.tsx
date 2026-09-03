@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PencilIcon, TrashIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -13,9 +13,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import { CategorySelect, type CategoryOption } from "./category-select";
-import { EditTransactionDialog, type EditableTx } from "./edit-transaction-dialog";
+import { EditTransactionDialog, type EditableTx, SOURCES } from "./edit-transaction-dialog";
 import { deleteTransactionsBulk, reviewTransaction, reviewTransactionsBulk } from "./review-actions";
 
 interface TxRow {
@@ -28,6 +39,31 @@ interface TxRow {
   category: string | null;
   done_by: string | null;
   needs_review: boolean;
+}
+
+const DONE_BY_OPTIONS = ["Script", "AI", "Manual"] as const;
+
+interface Filters {
+  source: string;
+  month: string;
+  amountMin: string;
+  amountMax: string;
+  category: string;
+  doneBy: string;
+}
+
+const EMPTY_FILTERS: Filters = {
+  source: "all",
+  month: "all",
+  amountMin: "",
+  amountMax: "",
+  category: "all",
+  doneBy: "all",
+};
+
+function monthLabel(ym: string): string {
+  const d = new Date(`${ym}-01T00:00:00Z`);
+  return d.toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 }
 
 export function TransactionsView({
@@ -60,7 +96,50 @@ export function TransactionsView({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const allSelected = rows.length > 0 && selectedIds.size === rows.length;
+
+  // Display filters — purely client-side, narrowing the already-loaded
+  // `rows` for browsing. Independent from the server-side ?category=&month=
+  // deep-link prefilter in page.tsx (that one narrows the SQL query before
+  // this component ever mounts; these narrow further, on top of that).
+  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  const hasActiveFilters =
+    filters.source !== "all" ||
+    filters.month !== "all" ||
+    filters.category !== "all" ||
+    filters.doneBy !== "all" ||
+    filters.amountMin !== "" ||
+    filters.amountMax !== "";
+
+  // Grouping/sorting/filtering-by-month all key off `date` (the transaction
+  // date shown in the Date column), not `charge_date` (a card's billing/
+  // statement date, which for Cal/Max/IsraCard purchases can land in a
+  // different month than the purchase itself) — otherwise the visible
+  // month boundaries wouldn't line up with the divider or the sort order.
+  const distinctMonths = useMemo(() => {
+    const months = new Set(rows.map((r) => r.date.slice(0, 7)));
+    return [...months].sort().reverse();
+  }, [rows]);
+
+  const filteredRows = useMemo(() => {
+    const min = filters.amountMin === "" ? null : parseFloat(filters.amountMin);
+    const max = filters.amountMax === "" ? null : parseFloat(filters.amountMax);
+    return rows
+      .filter((r) => {
+        if (filters.source !== "all" && r.source !== filters.source) return false;
+        if (filters.month !== "all" && r.date.slice(0, 7) !== filters.month) return false;
+        if (filters.category !== "all" && r.category !== filters.category) return false;
+        if (filters.doneBy !== "all") {
+          if (filters.doneBy === "pending" ? r.done_by !== null : r.done_by !== filters.doneBy) return false;
+        }
+        const magnitude = Math.abs(r.amount);
+        if (min !== null && !Number.isNaN(min) && magnitude < min) return false;
+        if (max !== null && !Number.isNaN(max) && magnitude > max) return false;
+        return true;
+      })
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [rows, filters]);
+
+  const allSelected = filteredRows.length > 0 && filteredRows.every((r) => selectedIds.has(r.id));
 
   const needsReview = rows.filter((r) => r.needs_review);
   const current = needsReview[0];
@@ -114,7 +193,14 @@ export function TransactionsView({
   }
 
   function toggleSelectAll() {
-    setSelectedIds(allSelected ? new Set() : new Set(rows.map((r) => r.id)));
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const r of filteredRows) {
+        if (allSelected) next.delete(r.id);
+        else next.add(r.id);
+      }
+      return next;
+    });
   }
 
   async function handleDeleteSelected() {
@@ -281,6 +367,115 @@ export function TransactionsView({
         </DialogContent>
       </Dialog>
 
+      <div className="flex flex-wrap items-end gap-2 rounded-md border bg-muted/20 px-3 py-2">
+        <div className="flex flex-col gap-1">
+          <span className="text-xs text-muted-foreground">Source</span>
+          <Select value={filters.source} onValueChange={(v) => setFilters((f) => ({ ...f, source: v ?? "all" }))}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All sources</SelectItem>
+              {SOURCES.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <span className="text-xs text-muted-foreground">Month</span>
+          <Select value={filters.month} onValueChange={(v) => setFilters((f) => ({ ...f, month: v ?? "all" }))}>
+            <SelectTrigger className="w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All months</SelectItem>
+              {distinctMonths.map((m) => (
+                <SelectItem key={m} value={m}>
+                  {monthLabel(m)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <span className="text-xs text-muted-foreground">Amount ₪</span>
+          <div className="flex items-center gap-1">
+            <Input
+              type="number"
+              inputMode="decimal"
+              placeholder="Min"
+              className="w-20"
+              value={filters.amountMin}
+              onChange={(e) => setFilters((f) => ({ ...f, amountMin: e.target.value }))}
+            />
+            <span className="text-muted-foreground">–</span>
+            <Input
+              type="number"
+              inputMode="decimal"
+              placeholder="Max"
+              className="w-20"
+              value={filters.amountMax}
+              onChange={(e) => setFilters((f) => ({ ...f, amountMax: e.target.value }))}
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <span className="text-xs text-muted-foreground">Category</span>
+          <Select value={filters.category} onValueChange={(v) => setFilters((f) => ({ ...f, category: v ?? "all" }))}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All categories</SelectItem>
+              {[...Map.groupBy(categoryOptions, (c) => c.section).entries()].map(([section, opts]) => (
+                <SelectGroup key={section}>
+                  <SelectLabel>{section}</SelectLabel>
+                  {opts.map((c) => (
+                    <SelectItem key={c.name} value={c.name}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <span className="text-xs text-muted-foreground">Done by</span>
+          <Select value={filters.doneBy} onValueChange={(v) => setFilters((f) => ({ ...f, doneBy: v ?? "all" }))}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              {DONE_BY_OPTIONS.map((d) => (
+                <SelectItem key={d} value={d}>
+                  {d}
+                </SelectItem>
+              ))}
+              <SelectItem value="pending">Pending</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {hasActiveFilters && (
+          <Button variant="outline" size="sm" onClick={() => setFilters(EMPTY_FILTERS)}>
+            Clear filters
+          </Button>
+        )}
+
+        <span className="ml-auto self-center text-xs text-muted-foreground">
+          {filteredRows.length} of {rows.length} shown
+        </span>
+      </div>
+
       <div className="overflow-x-auto rounded-md border">
         <Table>
           <TableHeader>
@@ -305,8 +500,15 @@ export function TransactionsView({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((t, i) => (
-              <TableRow key={t.id} className={i % 2 === 1 ? "bg-muted/40" : ""}>
+            {filteredRows.map((t, i) => {
+              const monthKey = t.date.slice(0, 7);
+              const prevMonthKey = i > 0 ? filteredRows[i - 1].date.slice(0, 7) : null;
+              const isNewMonth = i > 0 && monthKey !== prevMonthKey;
+              return (
+              <TableRow
+                key={t.id}
+                className={cn(i % 2 === 1 && "bg-muted/40", isNewMonth && "border-t-2 border-t-foreground")}
+              >
                 <TableCell>
                   <input
                     type="checkbox"
@@ -347,7 +549,8 @@ export function TransactionsView({
                   </Button>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
       </div>
