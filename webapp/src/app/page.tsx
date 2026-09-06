@@ -2,6 +2,7 @@ import Link from "next/link";
 import { UploadIcon, ReceiptIcon, ChartColumnIcon, TagsIcon, CircleHelpIcon, SettingsIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Wordmark } from "@/components/logo";
+import { ApplePayMark } from "@/components/apple-pay-mark";
 import { FirstVisitWelcome } from "@/components/first-visit-welcome";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "./login/actions";
@@ -39,6 +40,12 @@ export default async function Home() {
           <Button variant="outline" size="lg">
             <CircleHelpIcon className="size-5" />
             How it works
+          </Button>
+        </Link>
+        <Link href="/apple-pay">
+          <Button variant="outline" size="lg">
+            <ApplePayMark className="h-[35px] w-[35px]" />
+            Connect Apple Pay
           </Button>
         </Link>
       </div>
