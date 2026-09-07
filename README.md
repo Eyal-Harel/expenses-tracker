@@ -1,4 +1,4 @@
-# expenses-tracker
+# Expenses Tracker
 
 Monthly script that turns Bank / Cal / Max exports into categorized rows in a Google Sheet, using a merchant→category rules table with an LLM fallback for anything new. See `docs/apple_pay_pipeline.md` for the separate, existing Apple Pay → Sheets pipeline (untouched by this).
 

@@ -26,7 +26,7 @@ export default async function LoginPage({
     <div className="flex flex-1 items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>expenses-tracker</CardTitle>
+          <CardTitle>Expenses Tracker</CardTitle>
           <CardDescription>Sign in, or create an account if you&apos;re new.</CardDescription>
         </CardHeader>
         <CardContent>

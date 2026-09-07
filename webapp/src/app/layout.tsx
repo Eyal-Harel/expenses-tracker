@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "expenses-tracker",
-  description: "Multi-tenant expense tracker — Phase 2 of the Bank/Cal/Max categorization pipeline.",
+  title: "Expenses Tracker",
+  description: "Import your bank and card exports, categorize them automatically, and see monthly totals by category.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -38,7 +38,7 @@ export function FirstVisitWelcome() {
     <Dialog open={open} onOpenChange={(next) => !next && dismiss()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Welcome to expenses-tracker</DialogTitle>
+          <DialogTitle>Welcome to Expenses Tracker</DialogTitle>
           <DialogDescription>
             New here? There&apos;s a short walkthrough covering how to set up your categories, import your first
             month, and everything else the app can do.
