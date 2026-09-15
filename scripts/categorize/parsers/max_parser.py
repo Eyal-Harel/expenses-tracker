@@ -23,6 +23,7 @@ def is_abroad_max_sheet(sheet_name: str) -> bool:
 # threshold, not just Bograshov as first described).
 THRESHOLD_MERCHANTS = {
     "סופר פארם גורדון",
+    "סופר פארם כיכר דיזינגוף",
     "אי.אם.פי.אם גורדון",
     "אי.אם.פי.אם בוגרשוב",
 }

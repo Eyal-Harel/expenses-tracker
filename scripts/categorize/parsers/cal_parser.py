@@ -27,6 +27,7 @@ FOREIGN_CURRENCY_MARKERS = {
     "€": "EUR",
     "£": "GBP",
 }
+SHEKEL_SIGN = "₪"
 
 
 def detect_foreign_currency(raw_amount: str) -> str | None:
@@ -36,6 +37,29 @@ def detect_foreign_currency(raw_amount: str) -> str | None:
         if symbol in raw_amount:
             return code
     return None
+
+
+def detect_section_currency(row: list[str]) -> str | None:
+    """Returns the foreign currency a *section-marker* line declares, or None.
+
+    Only needed for .xlsx exports. In a CSV, Cal writes the symbol into the
+    amount cell itself ("$20.00") and detect_foreign_currency() catches it per
+    row; in the .xlsx the amount is a bare numeric cell and the symbol survives
+    only on the section's subtotal line ("עסקאות בחיוב מיידי 45.00 $"). Without
+    this fallback an xlsx import silently booked those rows as shekels —
+    understating them and folding them into the main bundle's charge date.
+
+    The ILS exclusion below is load-bearing, not defensive padding. A real
+    export carries a pending-summary line reading
+    "עסקאות בתהליך קליטה 1,035.00 ₪ ובנוסף 211.29 $", which mentions $ but sits
+    ABOVE the ordinary shekel rows — treating that as a section marker would
+    convert an entire file of ILS rows. A genuine foreign-section marker only
+    ever names the one currency it is introducing.
+    """
+    text = " ".join(row)
+    if SHEKEL_SIGN in text:
+        return None
+    return detect_foreign_currency(text)
 
 
 def find_charge_date(rows: list[list[str]]) -> str | None:
@@ -90,16 +114,23 @@ def parse(path: str) -> list[Transaction]:
     rows = read_logical_rows(path)
     charge_date = find_charge_date(rows)
     transactions = []
+    # Set by a foreign-currency section marker and applied to every following
+    # row whose own amount cell carries no symbol (the .xlsx case). Stays None
+    # for a CSV export, where each amount cell is self-describing.
+    section_currency = None
     for row in rows:
         if len(row) <= COL_CHARGE_AMOUNT:
+            section_currency = detect_section_currency(row) or section_currency
             continue
         date_field = row[COL_DATE].strip()
         if not looks_like_date(date_field):
-            continue  # header / blank / trailing rows
+            # header / blank / trailing row - may also open a currency section
+            section_currency = detect_section_currency(row) or section_currency
+            continue
 
         merchant = row[COL_MERCHANT].strip()
         raw_amount = row[COL_CHARGE_AMOUNT]
-        foreign_currency = detect_foreign_currency(raw_amount)
+        foreign_currency = detect_foreign_currency(raw_amount) or section_currency
         amount = parse_amount(raw_amount)
         normalized_date = normalize_date(date_field)
         if foreign_currency:
