@@ -44,11 +44,19 @@ KNOWN_GROCERY_MERCHANTS = {
 MAX_RESTAURANT_HINT = "מסעדות"
 MAX_GENERIC_FOOD_HINT = "מזון וצריכה"
 
-# Max's own category covers fuel, electricity and gas together, but the
-# user's real usage under this label is gas stations -> Transportation.
-# Caveat: if a genuine electricity/gas utility bill ever shows up tagged the
-# same way, it would also get mapped to Transportation.
+# Max's own category covers fuel, electricity and gas together. Gas stations
+# are the common case -> Transportation, but utility bills share the label
+# (confirmed: Israel Electric Corp arrived tagged this way in Nov 2026), so
+# merchants matching a utility marker go to Bills instead. Substring match so
+# branch/suffix variants of the same utility are caught on first sight.
 MAX_FUEL_HINT = "דלק, חשמל וגז"
+UTILITY_MARKERS = (
+    "חברת החשמל",  # Israel Electric Corp
+    "חשמל",  # other electricity suppliers (Cellcom Energy, Pazgas Electricity, ...)
+    "אמישראגז",  # home cooking-gas suppliers
+    "סופרגז",
+    "פזגז",
+)
 
 # Abroad-tab merchant overrides: Max sometimes charges these on the abroad
 # tab instead of local (unclear why), but they're not travel spending.
@@ -102,6 +110,8 @@ def resolve_hint(merchant: str, max_own_category: str) -> str | None:
     if MAX_RESTAURANT_HINT in max_own_category or max_own_category == MAX_GENERIC_FOOD_HINT:
         return BELOW_THRESHOLD_CATEGORY
     if max_own_category == MAX_FUEL_HINT:
+        if any(marker in merchant for marker in UTILITY_MARKERS):
+            return "Bills"
         return "Transportation"
     return None
 
