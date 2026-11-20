@@ -18,9 +18,7 @@ Read `docs/runbook.md` first - it has the source-recognition rules, the categori
 
 1. **Find what's already there.** Read the `Transactions` tab (Sheets connector) and get per-source max `Date` and the latest `Charge Date` per card. Tell the user exactly which statements / bank range are missing - and flag any statement that looks partial (far fewer rows than usual, or deal dates stopping early - it was downloaded mid-cycle).
 2. **Identify each uploaded file by structure, not filename** (runbook §1). Max `.xlsx` has the month (e.g. `11/2026`) in row 3 and two tabs; Cal has `עסקאות לחיוב ב-DD/MM/YYYY` in its title; the bank export has `מתאריך: … עד: …`.
-3. **Normalize inputs the parsers can't read:**
-   - Bank `.xls` (FibiSave) → convert to CSV (xlrd; Excel serial dates → `DD/MM/YYYY`), and rename the `תאור` header to `תיאור`.
-   - PDF statements are never imported - ask for the Excel export; use a PDF only to cross-check totals.
+3. **Inputs:** CSV, `.xlsx` and the bank's legacy `.xls` (FibiSave) all parse directly - pass the file as-is. PDF statements are never imported - ask for the Excel export; use a PDF only to cross-check totals.
 4. **Dry run** (`--dry-run --no-llm`) with a rules CSV built from the live `Category Rules` tab. Save inputs under `data/raw/` (gitignored).
 5. **Dedupe** every parsed row against the sheet on `(Date, Source, Merchant, Amount)`; drop matches.
 6. **Reconcile totals:** each card statement's parsed sum must equal its title total and the matching card debit line in the bank export. Stop and investigate any mismatch.
@@ -37,7 +35,9 @@ Read `docs/runbook.md` first - it has the source-recognition rules, the categori
    - In the cloud session there is no service account or Gemini key: write through the Google Sheets connector, and Claude proposes categories in step 8 instead of Gemini (`Done by = AI` for those, `Script` for rule/tier hits).
    - **The connector's append parses input like typed text** (USER_ENTERED): `2026-11-10` becomes a date serial, and the Summary's `SUMIFS(... "2026-11*")` then silently misses the row. Prefix every text cell with `'` (`"'2026-11-10"`, `"'Max"`); send Amount as a number and Needs Review as a JSON boolean. Write one row first and read back `userEnteredValue` to confirm `stringValue` before sending the rest.
    - **Refunds:** the Summary wraps every cell in `ABS()`, so a refund on its own counts as an expense. Give a refund the original purchase's Charge Date so the two net out in that month.
-10. **Re-sort and re-shade the Transactions tab** (the shading is fixed formatting and doesn't follow appended rows):
-    - `sortRange` on rows 2..last by column H (Charge Date) then A (Date), ascending.
-    - For each charge month, a contiguous block after the sort: background alternating white / light blue `rgb(0.91,0.94,0.98)` (January = white), and a medium grey top border on the block's first row as the month divider. Header row stays grey `rgb(0.741,0.741,0.741)`, bold.
+10. **Re-sort and re-shade the Transactions tab** - newest first, so the latest charges sit at the top (appends land at the bottom, and the shading is fixed formatting that moves with rows when sorted):
+    - `sortRange` on rows 2..last by column H (Charge Date) then A (Date), both **descending**.
+    - Clear borders on rows 2..last (`top`/`bottom`/`innerHorizontal` = NONE) - sorting carries the old dividers along with their rows.
+    - For each charge month (now a contiguous block, newest at the top): background white for odd months (Jan, Mar, …) and light blue `rgb(0.91,0.94,0.98)` for even months, plus a medium grey top border on the first row of every block except the first. Header row stays grey `rgb(0.741,0.741,0.741)`, bold.
+    - The connector's `update_spreadsheet` rejects `addConditionalFormatRule` payloads, which is why this is fixed formatting rather than an automatic rule.
 11. **Verify:** re-read the new rows and check the Summary month columns moved by the expected amounts.

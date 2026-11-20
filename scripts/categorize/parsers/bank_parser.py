@@ -31,7 +31,9 @@ PATTERN_RULES = [
 # these columns in a different order than July's), so columns are located by
 # header name each time rather than by fixed position.
 HEADER_DATE = "תאריך"
-HEADER_DESCRIPTION = "תיאור"
+# The bank spells this header both ways depending on the export: "תיאור" in
+# the CSV, "תאור" (no yod) in the .xls "FibiSave" download.
+HEADER_DESCRIPTION_SPELLINGS = ("תיאור", "תאור")
 HEADER_CREDIT = "זכות"
 HEADER_DEBIT = "חובה"
 
@@ -60,10 +62,11 @@ def find_columns(rows: list[list[str]]) -> tuple[int, dict[str, int]]:
     """Locates the header row and returns (row_index, {field: column_index})."""
     for i, row in enumerate(rows):
         cells = [c.strip() for c in row]
-        if HEADER_DATE in cells and HEADER_DESCRIPTION in cells:
+        description_header = next((h for h in HEADER_DESCRIPTION_SPELLINGS if h in cells), None)
+        if HEADER_DATE in cells and description_header:
             return i, {
                 "date": cells.index(HEADER_DATE),
-                "description": cells.index(HEADER_DESCRIPTION),
+                "description": cells.index(description_header),
                 "credit": cells.index(HEADER_CREDIT),
                 "debit": cells.index(HEADER_DEBIT),
             }

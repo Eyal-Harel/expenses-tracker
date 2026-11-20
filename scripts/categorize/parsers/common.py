@@ -101,13 +101,49 @@ def _read_xlsx_rows(path: str, sheet_matcher: Callable[[str], bool] | None) -> l
     return [[_xlsx_cell_to_str(cell) for cell in row] for row in worksheet.iter_rows(values_only=True)]
 
 
+def _read_xls_rows(path: str, sheet_matcher: Callable[[str], bool] | None) -> list[list[str]]:
+    """Legacy binary .xls (the bank's "FibiSave" export). Dates arrive as
+    typed Excel date cells (serial numbers); they're converted to D/M/Y for
+    the same reason as in _xlsx_cell_to_str(). Only cells xlrd types as dates
+    are converted — balances and reference numbers are plain numbers and must
+    never be mistaken for date serials."""
+    import datetime
+
+    import xlrd
+
+    workbook = xlrd.open_workbook(path)
+    sheet = workbook.sheet_by_index(0)
+    if sheet_matcher is not None:
+        for candidate in workbook.sheets():
+            if sheet_matcher(candidate.name):
+                sheet = candidate
+                break
+
+    rows = []
+    for i in range(sheet.nrows):
+        row = []
+        for cell in sheet.row(i):
+            if cell.ctype == xlrd.XL_CELL_DATE:
+                value = datetime.datetime(*xlrd.xldate_as_tuple(cell.value, workbook.datemode))
+                row.append(value.strftime("%d/%m/%Y"))
+            elif cell.ctype == xlrd.XL_CELL_EMPTY:
+                row.append("")
+            else:
+                row.append(str(cell.value))
+        rows.append(row)
+    return rows
+
+
 def read_logical_rows(path: str, sheet_matcher: Callable[[str], bool] | None = None) -> list[list[str]]:
-    """Reads a CSV or .xlsx file into logical rows (csv.reader correctly
-    merges multi-line quoted cells, which Cal's export uses in its header).
-    For a multi-sheet .xlsx (e.g. Max's real workbook, local + abroad tabs in
-    one file), `sheet_matcher` picks which worksheet to read; without one, the
-    workbook's active/only sheet is used."""
-    if path.lower().endswith(".xlsx"):
+    """Reads a CSV, .xlsx or legacy .xls file into logical rows (csv.reader
+    correctly merges multi-line quoted cells, which Cal's export uses in its
+    header). For a multi-sheet workbook (e.g. Max's real workbook, local +
+    abroad tabs in one file), `sheet_matcher` picks which worksheet to read;
+    without one, the workbook's active/first sheet is used."""
+    lower = path.lower()
+    if lower.endswith(".xlsx"):
         return _read_xlsx_rows(path, sheet_matcher)
+    if lower.endswith(".xls"):
+        return _read_xls_rows(path, sheet_matcher)
     with open(path, encoding="utf-8-sig", newline="") as f:
         return list(csv.reader(f))
