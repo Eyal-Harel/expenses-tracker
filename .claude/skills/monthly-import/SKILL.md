@@ -35,4 +35,9 @@ Read `docs/runbook.md` first - it has the source-recognition rules, the categori
    - Append rules first: new `Merchant | Category` rows to `Category Rules` (only merchants not already there; skip one-off booking-reference names like `AEGEAN AIRLI00000007YDOJW`).
    - Append transactions to `Transactions` in the column order `Date | Source | Merchant | Amount | Category | Needs Review | Done by | Charge Date`, amounts rounded to 2 decimals, values as RAW.
    - In the cloud session there is no service account or Gemini key: write through the Google Sheets connector, and Claude proposes categories in step 8 instead of Gemini (`Done by = AI` for those, `Script` for rule/tier hits).
-10. **Verify:** re-read the new rows' range and check the Summary month column moved by the expected amounts.
+   - **The connector's append parses input like typed text** (USER_ENTERED): `2026-11-10` becomes a date serial, and the Summary's `SUMIFS(... "2026-11*")` then silently misses the row. Prefix every text cell with `'` (`"'2026-11-10"`, `"'Max"`); send Amount as a number and Needs Review as a JSON boolean. Write one row first and read back `userEnteredValue` to confirm `stringValue` before sending the rest.
+   - **Refunds:** the Summary wraps every cell in `ABS()`, so a refund on its own counts as an expense. Give a refund the original purchase's Charge Date so the two net out in that month.
+10. **Re-sort and re-shade the Transactions tab** (the shading is fixed formatting and doesn't follow appended rows):
+    - `sortRange` on rows 2..last by column H (Charge Date) then A (Date), ascending.
+    - For each charge month, a contiguous block after the sort: background alternating white / light blue `rgb(0.91,0.94,0.98)` (January = white), and a medium grey top border on the block's first row as the month divider. Header row stays grey `rgb(0.741,0.741,0.741)`, bold.
+11. **Verify:** re-read the new rows and check the Summary month columns moved by the expected amounts.
